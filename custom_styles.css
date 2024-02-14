@@ -1,0 +1,124 @@
+/* The following two changes are needed to fix the line number gutters from being ~50% lower than they should be and
+thus not lining up with their line content */
+.d2h-code-side-linenumber, .d2h-code-linenumber {
+    top:0;
+} 
+.d2h-diff-tbody tr {
+    position: relative;
+}
+
+#ci_cd_status_text.passing {
+    color: forestgreen;
+}
+
+#ci_cd_status_text.failing {
+    color: red;
+}
+
+#custom-diff-area {
+    padding: 25px 0;
+    width:95vw;
+    margin: 25px auto;
+}
+
+/* .d2h-file-list-wrapper { */
+/* } */
+.d2h-file-list-line {
+background-color: #eee;
+border-radius: 5px;
+}
+
+.d2h-file-stats span {
+    border-width: 2px;
+    text-align: center;
+    min-width:30px;
+}
+
+blockquote {
+    margin-left: 2px;
+    padding-left: 10px;
+    border-left: 1px solid gray;
+}
+
+.d2h-file-header .collapse-button {
+    /* position: absolute;
+    right: */
+    padding: 0.5em 1em;
+    border: 1px solid #555;
+    border-radius: 1px;
+    cursor: pointer;
+}
+
+.d2h-file-header .collapse-button:hover {
+    background-color: #555;
+    color: #fff;
+}
+
+.d2h-file-header .right-div {
+    position: absolute;
+    right: 10px;   
+    top: 0px;
+    height: 100%;
+}
+.d2h-file-header .d2h-file-name-wrapper {
+    position: relative;
+}
+
+/* Make all the file diff element's headers sticky */
+.d2h-file-header {
+    position: sticky;
+    top: 0;
+    background-color: #f5f5f5;
+    z-index: 1;
+}
+
+/* Make the stupid private banner only display at top of page and not sticky/fixed */
+.yui3-banner-content.private {
+    position: static !important;
+}
+
+/* The filename link in the files list section */
+a.d2h-file-name {
+    cursor: pointer;
+}
+a.d2h-file-name:hover {
+    text-decoration: underline;
+}
+
+/* The button for switching between unified and split view */
+button#diff-view-switcher {
+    padding: 1em 2em;
+    border-radius: .25em;
+    border: 1px solid #555;
+    cursor: pointer;
+}
+button#diff-view-switcher:hover {
+    background-color: #555;
+    color: #fff;
+}
+
+.d2h-file-wrapper.collapsed .d2h-files-diff, .d2h-file-wrapper.collapsed .d2h-file-diff {
+    display: none;
+} 
+
+.d2h-inline-comment-container
+{
+    padding: 20px;
+}
+.d2h-inline-comment {
+    background-color: #eee;
+    padding: 10px;
+    border-radius: .25em;
+    border: 1px solid #555;
+    overflow: hidden;
+}
+
+.d2h-inline-comment-header {
+    border-bottom: 1px solid #555;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.d2h-inline-comment-body {
+    /* padding: 10px; */
+}
