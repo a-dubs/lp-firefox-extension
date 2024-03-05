@@ -1,15 +1,20 @@
 {
-    "manifest_version": 3,
-    "name": "LP Firefox Extension",
-    "version": "1.0",
-    "description": "made by a-dubs",
+    "manifest_version": 2,
+    "name": "CPC Launchpad Extension",
+    "version": "0.1.0",
+    "description": "Extension to improve code review process experience for the CPC Team at Canonical. Made with love by a-dubs",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "{451ae5fd-3af8-472c-a45d-fabd6968f2f1}"
+        }
+    },      
     "permissions": [
         "activeTab"
     ],
     "content_scripts": [
         {
             "matches": [
-                "<all_urls>"
+                "https://code.launchpad.net/*"
             ],
             "js": [
                 "diff2html.min.js",
@@ -23,12 +28,10 @@
             "run_at": "document_end" 
         }
     ],
-    "action": {
+    "browser_action": {
         "default_popup": "popup.html",
         "default_icon": {
-            "16": "assets/cloud-64.png",
-            "48": "assets/cloud-64.png",
-            "128": "assets/cloud-64.png"
+            "64": "assets/cloud-64.png"
         }
     }
 }
