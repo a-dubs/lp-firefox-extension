@@ -2,10 +2,13 @@
 // import "lib/marked.min.js";
 console.log("LP Firefox extension loaded")
 
-// test page:
+// test pages:
 // https://code.launchpad.net/~a-dubs/cloudware/+git/oraclelib/+merge/455155
+// https://code.launchpad.net/~gjolly/cloudware/+git/cinteract/+merge/461516
 
 var DIFF_TEXT = "";
+var MP = {};
+
 
 function cleanup_previous_elements() {
     console.log("cleaning up previous elements")
@@ -16,6 +19,10 @@ function cleanup_previous_elements() {
     if (document.querySelector("#custom-diff-area")) {
         document.querySelector("#custom-diff-area").remove()
     }
+    // cleanup any comment cards that may have been created
+    document.querySelectorAll(".d2h-code-comment-card").forEach(card => {
+        card.remove();
+    });
 
 }
 
@@ -24,7 +31,7 @@ function renderDivsInnerTextAsMarkdown(querySelectorString) {
     const target_divs = document.querySelectorAll(querySelectorString);
     var converter = new showdown.Converter();
     target_divs.forEach((div) => {
-        const originalText = div.innerText; 
+        const originalText = div.innerText;
         var html = converter.makeHtml(originalText);
         div.innerHTML = html;
     });
@@ -152,6 +159,10 @@ function performDiffViewerMods(collapsedDiffIds) {
             const diffId = link.getAttribute("data-diff-id");
             const diff = document.getElementById(diffId);
             diff.scrollIntoView();
+            // expand the diff if it's collapsed
+            if (diff.classList.contains("collapsed")) {
+                diff.querySelector(".collapse-button").click();
+            }
         });
     });
 }
@@ -168,9 +179,33 @@ function createOrUpdateDiffViewer(unified_view) {
         // create new div to inject diff viewer into
         const diffViewer = document.createElement("div")
         diffViewer.setAttribute("id", "diff-viewer")
+        // create button that will switch between new custom diff viewer and old launchpad diff viewer
+        const showOldDiffButton = document.createElement("button");
+        showOldDiffButton.classList.add("show-old-diff-button");
+        showOldDiffButton.innerText = "Show old diff viewer";
+        showOldDiffButton.addEventListener("click", () => {
+            // check button's text and toggle between showing old and new diff viewer
+            if (showOldDiffButton.innerText === "Show old diff viewer") {
+                showOldDiffButton.innerText = "Show new diff viewer";
+                document.querySelector(".diff-content").style.display = "";
+                diffViewer.style.display = "none";
+                showOldDiffButton.classList.remove("showing-new-diff");
+                showOldDiffButton.classList.add("showing-old-diff");
+            }
+            else {
+                showOldDiffButton.innerText = "Show old diff viewer";
+                document.querySelector(".diff-content").style.display = "none";
+                diffViewer.style.display = "";
+                showOldDiffButton.classList.remove("showing-old-diff");
+                showOldDiffButton.classList.add("showing-new-diff");
+            }
+
+        });
+
         // insert new diff viewer div into customDiffArea
         customDiffArea.appendChild(diffViewer)
         // insert customDiffArea before old diff area that we're replacing
+        document.querySelector("#review-diff").insertBefore(showOldDiffButton, document.querySelector(".diff-content"))
         document.querySelector("#review-diff").insertBefore(customDiffArea, document.querySelector(".diff-content"))
         // hide old diff (.diff-content)
         document.querySelector(".diff-content").style.display = "none";
@@ -227,8 +262,6 @@ function doCustomDiffStuff() {
     // add diff viewer
     createOrUpdateDiffViewer(unified_view = true);
     addDiffViewSwitcher();
-
-
 }
 
 function doCiCdStuff() {
@@ -241,6 +274,10 @@ function doCiCdStuff() {
     }
 }
 
+// inputs:
+// - tr_element (HTML element): the table row element that the comment will be inserted below
+// - commentElement (HTML element): the comment element to be inserted
+// - line_no (int): the line number that the comment is associated with 
 function insertInlineCommentElementBelowLine(tr_element, commentElement, line_no) {
     // check if a comment element already exists for this line
     const existingComment = document.querySelector(`#d2h-inline-comment-line-${line_no}`);
@@ -268,12 +305,155 @@ function insertInlineCommentElementBelowLine(tr_element, commentElement, line_no
     tr_element.insertAdjacentElement("afterend", commentWrapperRow);
 }
 
+function createEditableInlineCommentElement() {
+    // TODO:
+    // - when you press the cancel button, remove the container element as well. currently a blank line is left behind
+    const header = document.createElement("div");
+    header.classList.add("d2h-inline-comment-header");
+    header.innerText = "Add inline comment:"
+
+    const textarea = document.createElement("textarea");
+    textarea.classList.add("d2h-inline-comment-textarea");
+    textarea.setAttribute("placeholder", "Enter comment...");
+
+
+    const footer = document.createElement("div");
+
+    footer.classList.add("d2h-inline-comment-footer");
+
+    const tabs = document.createElement("div");
+    tabs.classList.add("d2h-inline-comment-tabs");
+    const tab1 = document.createElement("button");
+    tab1.innerText = "Edit Comment";
+    tab1.classList.add("d2h-inline-comment-tab");
+    tab1.classList.add("edit-comment");
+    tab1.classList.add("active");
+    const tab2 = document.createElement("button");
+    tab2.innerText = "Preview Comment";
+    tab2.classList.add("d2h-inline-comment-tab");
+    tab2.classList.add("preview-comment");
+    tabs.appendChild(tab1);
+    tabs.appendChild(tab2);
+
+    const preview = document.createElement("div");
+    preview.classList.add("d2h-inline-comment-preview");
+    preview.classList.add("markdown")
+    preview.style.display = "none";
+
+    const contentArea = document.createElement("div");
+    contentArea.classList.add("d2h-inline-comment-content-area");
+    contentArea.appendChild(textarea);
+    contentArea.appendChild(preview);
+
+    tab1.addEventListener("click", () => {
+        tab1.classList.add("active");
+        tab2.classList.remove("active");
+        textarea.style.display = "block";
+        preview.style.display = "none";
+    });
+    tab2.addEventListener("click", () => {
+        tab2.classList.add("active");
+        tab1.classList.remove("active");
+        preview.style.display = "block";
+        textarea.style.display = "none";
+        converter = new showdown.Converter();
+        preview.innerHTML = converter.makeHtml(textarea.value);
+
+    });
+
+
+    const saveDraftButton = document.createElement("button");
+    saveDraftButton.innerText = "Save Draft";
+    saveDraftButton.classList.add("d2h-inline-comment-button");
+    saveDraftButton.classList.add("save-draft");
+    const postButton = document.createElement("button");
+    postButton.innerText = "Post Comment";
+    postButton.classList.add("d2h-inline-comment-button");
+    postButton.classList.add("post-comment");
+    // cancel comment button
+    const cancelButton = document.createElement("button");
+    cancelButton.innerText = "Cancel";
+    cancelButton.classList.add("d2h-inline-comment-button");
+    cancelButton.classList.add("cancel-comment");
+    cancelButton.addEventListener("click", () => {
+        // remove the comment element
+        editableInlineComment.remove();
+    });
+    footer.appendChild(cancelButton);
+    footer.appendChild(saveDraftButton);
+    footer.appendChild(postButton);
+
+    const editableInlineComment = document.createElement("div");
+    editableInlineComment.classList.add("d2h-inline-comment");
+    // make the editable text wrap instead of extending horizontally
+    editableInlineComment.style.whiteSpace = "pre-wrap";
+
+    editableInlineComment.appendChild(header);
+    editableInlineComment.appendChild(tabs);
+    // editableInlineComment.appendChild(textarea);
+    // editableInlineComment.appendChild(preview);
+    editableInlineComment.appendChild(contentArea);
+    editableInlineComment.appendChild(footer);
+
+    // return as list even though it's only one element
+    // this will allow for comment threads in the future
+    return editableInlineComment;
+}
+
+function findDiffElementByFileName(fileName) {
+    console.log("finding diff element by file name " + fileName)
+    const file_diffs = document.querySelectorAll(".d2h-file-wrapper");
+    for (const file_diff of file_diffs) {
+        const file_name = file_diff.querySelector(".d2h-file-name").innerText;
+        console.log(`${file_name} === ${fileName}?`)
+        if (file_name === fileName) {
+            return file_diff;
+        }
+    }
+    return null;
+}
+
+// returns table row element
+function findDiffLineElementByLineNumber(diffElement, lineNumber) {
+    const tableRows = diffElement.querySelectorAll("tr");
+    for (const row of tableRows) {
+        if (parseInt(row.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
+            return row;
+        }
+    };
+    return null;
+}
+
+// function to return x number of lines before the target line number
+// and y number of lines after the target line number including the target line
+function getLinesAroundTargetLine(fileName, lineNumber, numberOfLinesBefore, numberOfLinesAfter) {
+    const diffElement = findDiffElementByFileName(fileName);
+    const lines = diffElement.querySelectorAll("tr");
+    var targetLineIndex = -1;
+    lines.forEach((line, index) => {
+        if (parseInt(line.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
+            targetLineIndex = index;
+        }
+    });
+    if (targetLineIndex === -1) {
+        console.log(`target line ${lineNumber} not found in file ${fileName}`);
+        return null;
+    }
+    const linesArray = Array.from(lines);
+    const linesBefore = linesArray.slice(targetLineIndex - numberOfLinesBefore, targetLineIndex);
+    const targetLine = linesArray[targetLineIndex];
+    const linesAfter = linesArray.slice(targetLineIndex + 1, targetLineIndex + numberOfLinesAfter + 1);
+    // combine the before and after lines and the target line into one list and return that
+    console.log(`returning ${linesBefore.concat(targetLine).concat(linesAfter).length} lines around line ${lineNumber} in file ${fileName}`);
+    return linesBefore.concat(targetLine).concat(linesAfter);
+}
+
 function createInlineCommentElement(commentInfo) {
-    console.log("creating inline comment element for comment: " + commentInfo.commentText)
+    // console.log("creating inline comment element for comment: " + commentInfo.commentText)
     const header = document.createElement("div");
     header.classList.add("d2h-inline-comment-header");
     header.innerText = commentInfo.author + " commented on " + commentInfo.commentDate + ":";
-    
+
     const body = document.createElement("div");
     body.classList.add("d2h-inline-comment-body");
     converter = new showdown.Converter();
@@ -285,19 +465,10 @@ function createInlineCommentElement(commentInfo) {
     // commentElement.setAttribute("placeholder", "Enter comment...");
     // make the editable text wrap instead of extending horizontally
     // customCommentElement.style.whiteSpace = "pre-wrap";
-    const width = document.querySelector(".d2h-code-wrapper").offsetWidth;
-    // subtract 2 for border width and 20 for padding and 40 for margin
-    customCommentElement.style.width = (width - 2 - 20 - 40) + "px";
-    
-    // add listener to resize the comment element when the window is resized
-    window.addEventListener('resize', () => {
-        const width = document.querySelector(".d2h-code-wrapper").offsetWidth;
-        document.querySelector(".d2h-inline-comment").style.width = (width - 2 - 20 - 40) + "px";
-    });
 
     customCommentElement.appendChild(header);
     customCommentElement.appendChild(body);
-    
+
     // return as list even though it's only one element
     // this will allow for comment threads in the future
     return customCommentElement;
@@ -390,6 +561,29 @@ function fetchInlineComments() {
         });
     });
 
+    // group comments by file and line number
+    // for each file, for each line number, create a list of comments
+    var grouped_comments = {};
+    parsed_comments.forEach(parsed_comment => {
+        if (parsed_comment.file in grouped_comments) {
+            if (parsed_comment.line_no in grouped_comments[parsed_comment.file]) {
+                grouped_comments[parsed_comment.file][parsed_comment.line_no].push(parsed_comment);
+            }
+            else {
+                grouped_comments[parsed_comment.file][parsed_comment.line_no] = [parsed_comment];
+            }
+        }
+        else {
+            grouped_comments[parsed_comment.file] = {};
+            grouped_comments[parsed_comment.file][parsed_comment.line_no] = [parsed_comment];
+        }
+    });
+
+    console.log(grouped_comments)
+
+    createCodeCommentCards(grouped_comments);
+
+
     // console
 
     // gutter class is ".d2h-code-side-linenumber" for side-by-side view and ".d2h-code-linenumber" for unified view 
@@ -397,11 +591,11 @@ function fetchInlineComments() {
 
     const file_diffs = document.querySelectorAll(".d2h-file-wrapper");
 
-    console.log(parsed_comments)
+    // console.log(parsed_comments)
 
     // 
     parsed_comments.forEach(parsed_comment => {
-        console.log(parsed_comment)
+        // console.log(parsed_comment)
         // find the file diff that matches the comment's file
         file_diffs.forEach(file_diff => {
             const file_name = file_diff.querySelector(".d2h-file-name").innerText;
@@ -410,21 +604,20 @@ function fetchInlineComments() {
                 // comments to the same line easier
                 const gutters = file_diff.querySelectorAll(".d2h-code-side-linenumber , .d2h-code-linenumber");
                 var target_gutter = null;
-                
+
                 // find all gutters with the same line number as the comment using the innerText
                 gutters.forEach(element => {
                     if (parseInt(element.innerText) === parsed_comment.line_no) {
                         target_gutter = element;
                     }
                 });
-                console.log(target_gutter)
+                // console.log(target_gutter)
                 if (target_gutter) {
                     insertInlineCommentElementBelowLine(target_gutter.parentElement, createInlineCommentElement(parsed_comment), parsed_comment.line_no);
                 }
             }
         });
     });
-
 }
 
 function doInlineCommentsStuff() {
@@ -439,54 +632,153 @@ function doInlineCommentsStuff() {
         gutter.addEventListener("click", () => {
             console.log("gutter clicked")
             const tr_element = gutter.parentElement;
-            insertInlineCommentElementBelowLine(tr_element);
+            createNewEditableInlineComment(tr_element);
         });
     });
+}
+
+// create a new card that contains X number of lines before the target line number
+function createCodeCommentCards(groupedComments) {
+    // groupedComments.forEach(fileName => {
+    for (const file in groupedComments) {
+        for (const line_no in groupedComments[file]) {
+            const comments = groupedComments[file][line_no];
+
+            const commentCard = document.createElement("div");
+            commentCard.classList.add("d2h-code-comment-card");
+            const header = document.createElement("div");
+            header.classList.add("d2h-code-comment-card-header");
+            const fileName = document.createElement("h3");
+            fileName.innerText = file;
+            const diffTable = document.createElement("table");
+            diffTable.classList.add("d2h-diff-table");
+            const diffTbody = document.createElement("tbody");
+            diffTbody.classList.add("d2h-diff-tbody");
+            const commentsContainer = document.createElement("div");
+            commentsContainer.classList.add("d2h-code-comment-card-comments-container");
+
+            commentCard.appendChild(header);
+            commentCard.appendChild(diffTable);
 
 
+            const diffLines = getLinesAroundTargetLine(comments[0].file, comments[0].line_no, 4, 0);
+            // copy the diff lines into the diffTbody
+            diffLines.forEach(line => {
+                const clonedLine = line.cloneNode(true); // clone the line element
+                diffTbody.appendChild(clonedLine); // append the cloned line element
+            });
+            diffTable.appendChild(diffTbody);
+
+
+            // append comments 
+            comments.forEach(comment => {
+                commentsContainer.appendChild(createInlineCommentElement(comment));
+            });
+            commentCard.appendChild(commentsContainer);
+
+            // insert the comment card into the "#conversation" div
+            document.querySelector("#conversation").appendChild(commentCard);
+
+
+        }
+
+
+    }
+}
+
+// given a row of the diff 
+function createNewEditableInlineComment(tr_element) {
+    const commentElement = createEditableInlineCommentElement();
+    line_no = parseInt(tr_element.querySelector(".d2h-code-linenumber").innerText);
+    insertInlineCommentElementBelowLine(tr_element, commentElement, line_no);
 
 }
 
-function main() {
 
+function fetchMPFromLPyd() {
+    const webLink = document.location.href;
+    const previewDiffLink = document.querySelector(".diff-link").href;
+    const previewDiffID = previewDiffLink.split("/")[10];
+    console.log(previewDiffID);
+    const number_of_comments = document.querySelectorAll("#conversation .boardComment").length;
 
-
-    // console.log("main")
-    showdown.setFlavor('github');
-    cleanup_previous_elements()
-
-    doMarkdownCommentsStuff()
-    doCiCdStuff();
-    doCustomDiffStuff();
-    doInlineCommentsStuff();
-    document.querySelectorAll(".boardCommentBody").forEach((comment) => {
-        // console.log(comment.innerText)
-
+    const queryParams = new URLSearchParams({
+        web_link: webLink,
+        preview_diff_id: previewDiffID,
+        number_of_comments: number_of_comments,
     });
 
-    // wait 200ms for the inline comments to load
-    // do this 10 times then give up
-    var attempts = 0;
-    var interval = setInterval(() => {
-        attempts++;
-        console.log("attempting to fetch inline comments")
-        const inlineComments = document.querySelectorAll(".diff-content .inline-comments");
-        if (inlineComments.length > 0) {
-            console.log("inline comments found!")
-            clearInterval(interval);
-            fetchInlineComments();
-        }
-        if (attempts >= 20) {
-            console.log("giving up on inline comments")
-            clearInterval(interval);
-        }
-    }, 250);
+    const endpoint = "http://127.0.0.1:6969/lpyd/mp" + "?" + queryParams.toString();
+    console.log(endpoint);
+
+    fetch(endpoint, { mode: 'cors' })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            console.log(response)
+            return response.json();
+        })
+        .then(data => {
+            // Handle the response data here
+            MP = data;
+            doInlineCommentsStuff();
+        })
+        .catch(error => {
+            // Handle errors here
+            console.error('There was a problem with the fetch operation:', error);
+        });
+
+}
+
+
+function main() {
+    showdown.setFlavor('github');
+    cleanup_previous_elements()
+    // find number of comments on MP
+    doCiCdStuff();
+    // doMarkdownCommentsStuff()
+    doCustomDiffStuff();
+    document.querySelectorAll(".boardCommentBody").forEach((comment) => {
+        // console.log(comment.innerText)
+    });
+
+    // waitForInlineCommentsAndFetch();
+
+
+    // const newestDiffTitle = document.querySelector(".diff-navigator select").innerText;
+    // console.log(newestDiffTitle);
+
+    // JUST DEBUGING STUFF : DELETE ME
+    // const diffElement = findDiffElementByFileName("junk.py");
+    // console.log(diffElement);
+    // const lineElement = findDiffLineElementByLineNumber(diffElement, 47);
+    // console.log(lineElement);
+    // fetchInlineComments()
+    // console.log(extractFileAndLineFromDiff(47, DIFF_TEXT))
+
+    fetchMPFromLPyd()
+
+    // const test_url = "http://google.com"
+    // // fetch test_url to make sure url fetching is working
+    // fetch(test_url, { mode: 'cors' })
+    //     .then(response => {
+    //         if (!response.ok) {
+    //             throw new Error('Network response was not ok');
+    //         }
+    //         return response.text();
+    //     })
+    //     .then(data => {
+    //         // Handle the response data here
+    //         console.log(data);
+    //     })
+    //     .catch(error => {
+    //         // Handle errors here
+    //         console.error('There was a problem with the fetch operation:', error);
+    //     });
+    
     
 
-    
-    
-    // fetchInlineComments()
-    console.log(extractFileAndLineFromDiff(47, DIFF_TEXT))
 }
 
 if (document.readyState === "complete" || document.readyState === "interactive") {
@@ -499,3 +791,6 @@ else {
         main()
     });
 }
+
+// How to implement persistent settings:
+// https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Implement_a_settings_page
