@@ -9,6 +9,85 @@ console.log("LP Firefox extension loaded")
 var DIFF_TEXT = "";
 var MP = {};
 
+////////// LPyd Types //////////
+// @dataclasses.dataclass
+// class InlineCommentMessageType:
+//     author_username: str
+//     author_display_name: str
+//     message: str
+//     date: str
+
+
+// @dataclasses.dataclass
+// class InlineCommentType:
+//     file: str
+//     line_no: int
+//     messages: List[InlineCommentMessageType]
+
+
+// @dataclasses.dataclass
+// class MergeProposalCommentType:
+//     id: str
+//     self_link: str
+//     author_username: str
+//     message: str
+//     date_created: str
+//     date_last_edited: Optional[str] = None
+
+
+// @dataclasses.dataclass
+// class DiffPerFileInfoType:
+//     file: str
+//     lines_added: int
+//     lines_deleted: int
+//     status: Literal["new file", "deleted file", "modified"] = "modified"
+//     diff_text_snippet: Optional[str] = None
+//     original_file_contents: Optional[str] = None
+
+
+// @dataclasses.dataclass
+// class DiffType:
+//     id: int
+//     title: str
+//     self_link: str
+//     date_created: str
+//     source_revision_id: str
+//     target_revision_id: str
+//     diff_per_file_info: List[DiffPerFileInfoType] = dataclasses.field(default_factory=list)
+//     inline_comments: List[InlineCommentType] = dataclasses.field(default_factory=list)
+//     diff_text: Optional[str] = None
+
+
+// @dataclasses.dataclass
+// class MergeProposalReviewVote:
+//     reviewer_username: str
+//     reviewer_display_name: str
+//     vote: Optional[
+//         Literal["APPROVE", "NEEDS_FIXING", "NEEDS_INFO", "ABSTAIN", "DISAPPROVE", "NEEDS_RESUBMITTING"]
+//     ] = None
+//     needs_reviewer: bool = False
+
+
+// @dataclasses.dataclass
+// class MergeProposalType:
+//     id: int
+//     self_link: str
+//     repo_name: str
+//     url: str
+//     source_git_url: str
+//     target_git_url: str
+//     source_branch: str
+//     target_branch: str
+//     source_owner: str
+//     target_owner: str
+//     review_state: str
+//     diffs: List[DiffType] = dataclasses.field(default_factory=list)
+//     description: Optional[str] = None
+//     commit_message: Optional[str] = None
+//     ci_cd_status: Literal["PASSING", "FAILING", "UNKNOWN"] = "UNKNOWN"
+//     comments: List[MergeProposalCommentType] = dataclasses.field(default_factory=list)
+//     review_votes: List[MergeProposalReviewVote] = dataclasses.field(default_factory=list)
+
 
 function cleanup_previous_elements() {
     console.log("cleaning up previous elements")
@@ -50,16 +129,23 @@ function parseCICDState(comment) {
 
 
 function replaceCICDComments() {
-    const comments = document.querySelectorAll(".boardComment")
+    const comments = document.querySelectorAll("#conversation .boardComment")
+    console.log(`number of comments: ${comments.length}`)
     var most_recent_ci_cd_state = "";
     var most_recent_ci_cd_job_link = "";
     // const most_recent_ci_cd_state
     comments.forEach(comment => {
-        if (comment.querySelector(".boardCommentDetails a").innerText === "CPC CI Bot (cpc-ci-bot)") {
-            most_recent_ci_cd_state = parseCICDState(comment)
-            most_recent_ci_cd_job_link = comment.querySelector(".boardCommentBody a").href
-            // comment.remove()
-            comment.style.display = "none";
+        const user_link = comment.querySelector(".boardCommentDetails a.person")
+        if (user_link) {
+            if (user_link.innerText === "CPC CI Bot (cpc-ci-bot)") {
+                most_recent_ci_cd_state = parseCICDState(comment)
+                most_recent_ci_cd_job_link = comment.querySelector(".boardCommentBody a").href
+                // comment.remove()
+                comment.style.display = "none";
+            }
+        }
+        else {
+            console.log(comment.querySelector(".boardCommentDetails"))
         }
     });
     console.log("CI/CD: " + most_recent_ci_cd_state)
@@ -288,7 +374,12 @@ function insertInlineCommentElementBelowLine(tr_element, commentElement, line_no
         return;
     }
 
-    // comment element will be empty for now
+    commentContainer.appendChild(commentElement);
+}
+
+
+function insertNewInlineCommentWrapperBelowRow(tr_element, line_no) {
+
     const commentWrapperRow = document.createElement("tr");
     commentWrapperRow.classList.add("d2h-inline-comment-row");
     commentWrapperRow.id = `d2h-inline-comment-line-${line_no}`;
@@ -296,13 +387,47 @@ function insertInlineCommentElementBelowLine(tr_element, commentElement, line_no
     const commentContainer = document.createElement("td");
     commentContainer.classList.add("d2h-inline-comment-container");
     commentContainer.setAttribute('colspan', '2');
-
-    commentContainer.appendChild(commentElement);
-
+    
     commentWrapperRow.appendChild(commentContainer);
-
+    
     // insert after the tr element
     tr_element.insertAdjacentElement("afterend", commentWrapperRow);
+}
+
+function createOrUpdateInlineComment(LPyd_inline_comment_thread) {
+    // find the file diff that matches the comment's file
+    const line_no = LPyd_inline_comment_thread.line_no;
+    const file_diff = findDiffElementByFileName(LPyd_inline_comment_thread.file);
+    if (file_diff) {
+        const lineElement = findDiffLineElementByLineNumber(file_diff, line_no);
+        if (lineElement) {
+            // if (document.querySelector(".d2h-inline-comment-row"))
+            const existingComment = document.querySelector(`#d2h-inline-comment-line-${line_no}`);
+            if (!existingComment) {
+                insertNewInlineCommentWrapperBelowRow(
+                    lineElement,
+                    line_no,
+                );
+            }
+            const targetInlineCommentWrapper = document.querySelector(`#d2h-inline-comment-line-${line_no}`);
+            // console.log("comment already exists for line " + LPyd_inline_comment_thread.line_no)
+            const commentContainer = targetInlineCommentWrapper.querySelector(".d2h-inline-comment-container");
+            LPyd_inline_comment_thread.messages.forEach(message => {
+                commentContainer.appendChild(createInlineCommentElement(
+                    message.author_username,
+                    message.author_display_name,
+                    message.message,
+                    message.date,
+                ));
+            });
+            // }
+            // else {
+            //     LPyd_inline_comment_thread.messages.forEach(message => {
+            //         insertInlineCommentElementBelowLine(lineElement, createInlineCommentElement(message), line_no);
+            //     });
+            // }
+        }
+    }
 }
 
 function createEditableInlineCommentElement() {
@@ -415,10 +540,14 @@ function findDiffElementByFileName(fileName) {
 
 // returns table row element
 function findDiffLineElementByLineNumber(diffElement, lineNumber) {
+    console.log("finding diff line element by line number " + lineNumber + " using diff element:")
+    console.log(diffElement)
     const tableRows = diffElement.querySelectorAll("tr");
     for (const row of tableRows) {
-        if (parseInt(row.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
-            return row;
+        if (row.querySelector(".d2h-code-linenumber")) {
+            if (parseInt(row.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
+                return row;
+            }
         }
     };
     return null;
@@ -431,8 +560,10 @@ function getLinesAroundTargetLine(fileName, lineNumber, numberOfLinesBefore, num
     const lines = diffElement.querySelectorAll("tr");
     var targetLineIndex = -1;
     lines.forEach((line, index) => {
-        if (parseInt(line.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
-            targetLineIndex = index;
+        if (line.querySelector(".d2h-code-linenumber")) {
+            if (parseInt(line.querySelector(".d2h-code-linenumber").innerText) === lineNumber) {
+                targetLineIndex = index;
+            }
         }
     });
     if (targetLineIndex === -1) {
@@ -448,16 +579,17 @@ function getLinesAroundTargetLine(fileName, lineNumber, numberOfLinesBefore, num
     return linesBefore.concat(targetLine).concat(linesAfter);
 }
 
-function createInlineCommentElement(commentInfo) {
+function createInlineCommentElement(username, display_name, message, date) {
+    console.log(`createInlineCommentElement given: ${username}, ${display_name}, ${message}, ${date}`)
     // console.log("creating inline comment element for comment: " + commentInfo.commentText)
     const header = document.createElement("div");
     header.classList.add("d2h-inline-comment-header");
-    header.innerText = commentInfo.author + " commented on " + commentInfo.commentDate + ":";
+    header.innerText = display_name + " (@" + username + ") commented on " + date + ":";
 
     const body = document.createElement("div");
     body.classList.add("d2h-inline-comment-body");
     converter = new showdown.Converter();
-    body.innerHTML = converter.makeHtml(commentInfo.commentText);
+    body.innerHTML = converter.makeHtml(message);
 
     const customCommentElement = document.createElement("div");
     customCommentElement.classList.add("d2h-inline-comment");
@@ -526,99 +658,33 @@ function extractFileAndLineFromDiff(lineNumber, diffTxt) {
     return [null, null, null];
 }
 
+// function fetchInlineComments() {
+//    //     // 
+//     parsed_comments.forEach(parsed_comment => {
+//         // console.log(parsed_comment)
+//         // find the file diff that matches the comment's file
+//         file_diffs.forEach(file_diff => {
+//             const file_name = file_diff.querySelector(".d2h-file-name").innerText;
+//             if (file_name === parsed_comment.file) {
+//                 // TODO: move the gutter finding and insertion logic elsewhere to make adding multiple 
+//                 // comments to the same line easier
+//                 const gutters = file_diff.querySelectorAll(".d2h-code-side-linenumber , .d2h-code-linenumber");
+//                 var target_gutter = null;
 
-function fetchInlineComments() {
-    console.log("fetching inline comments")
-    // #review-diff .boardComment is the actual inline comment element
-    // but #review-diff .inline-comment is for a single inline comments and .inline-comments is for an inline comment
-    // thread
-
-    // for now, get only single inline comments
-    const inlineCommentsWrappers = document.querySelectorAll(".diff-content .inline-comments");
-    // get diff line number from the element's id in the format "comments-diff-line-47"
-    // create dict with keys of line number, author, comment_text, comment_date, file, and line content
-    var parsed_comments = [];
-    inlineCommentsWrappers.forEach(commentWrapper => {
-        const comments = commentWrapper.querySelectorAll(".boardComment");
-        const lineNum = commentWrapper.id.split("-")[3];
-        const [file, line_no, lineContent] = extractFileAndLineFromDiff(parseInt(lineNum), DIFF_TEXT);
-        comments.forEach(comment => {
-            // console.log(comment)
-            const details = comment.querySelector(".boardCommentDetails").innerText;
-            const author = details.split(" wrote on ")[0];
-            const commentDate = details.split(" wrote on ")[1].replace(":", "");
-            const commentText = comment.querySelector(".boardCommentBody").innerText;
-            // const commentDate = comment.querySelector(".boardCommentActivity").innerText;
-            parsed_comments.push({
-                originalDiffLineNum: lineNum,
-                author: author,
-                commentText: commentText,
-                commentDate: commentDate,
-                file: file,
-                line_no: line_no,
-                lineContent: lineContent
-            });
-        });
-    });
-
-    // group comments by file and line number
-    // for each file, for each line number, create a list of comments
-    var grouped_comments = {};
-    parsed_comments.forEach(parsed_comment => {
-        if (parsed_comment.file in grouped_comments) {
-            if (parsed_comment.line_no in grouped_comments[parsed_comment.file]) {
-                grouped_comments[parsed_comment.file][parsed_comment.line_no].push(parsed_comment);
-            }
-            else {
-                grouped_comments[parsed_comment.file][parsed_comment.line_no] = [parsed_comment];
-            }
-        }
-        else {
-            grouped_comments[parsed_comment.file] = {};
-            grouped_comments[parsed_comment.file][parsed_comment.line_no] = [parsed_comment];
-        }
-    });
-
-    console.log(grouped_comments)
-
-    createCodeCommentCards(grouped_comments);
-
-
-    // console
-
-    // gutter class is ".d2h-code-side-linenumber" for side-by-side view and ".d2h-code-linenumber" for unified view 
-    // get all gutters 
-
-    const file_diffs = document.querySelectorAll(".d2h-file-wrapper");
-
-    // console.log(parsed_comments)
-
-    // 
-    parsed_comments.forEach(parsed_comment => {
-        // console.log(parsed_comment)
-        // find the file diff that matches the comment's file
-        file_diffs.forEach(file_diff => {
-            const file_name = file_diff.querySelector(".d2h-file-name").innerText;
-            if (file_name === parsed_comment.file) {
-                // TODO: move the gutter finding and insertion logic elsewhere to make adding multiple 
-                // comments to the same line easier
-                const gutters = file_diff.querySelectorAll(".d2h-code-side-linenumber , .d2h-code-linenumber");
-                var target_gutter = null;
-
-                // find all gutters with the same line number as the comment using the innerText
-                gutters.forEach(element => {
-                    if (parseInt(element.innerText) === parsed_comment.line_no) {
-                        target_gutter = element;
-                    }
-                });
-                // console.log(target_gutter)
-                if (target_gutter) {
-                    insertInlineCommentElementBelowLine(target_gutter.parentElement, createInlineCommentElement(parsed_comment), parsed_comment.line_no);
-                }
-            }
-        });
-    });
-}
+//                 // find all gutters with the same line number as the comment using the innerText
+//                 gutters.forEach(element => {
+//                     if (parseInt(element.innerText) === parsed_comment.line_no) {
+//                         target_gutter = element;
+//                     }
+//                 });
+//                 // console.log(target_gutter)
+//                 if (target_gutter) {
+//                     insertInlineCommentElementBelowLine(target_gutter.parentElement, createInlineCommentElement(parsed_comment), parsed_comment.line_no);
+//                 }
+//             }
+//         });
+//     });
+// }
 
 function doInlineCommentsStuff() {
 
@@ -632,58 +698,83 @@ function doInlineCommentsStuff() {
         gutter.addEventListener("click", () => {
             console.log("gutter clicked")
             const tr_element = gutter.parentElement;
+            const line_no = parseInt(tr_element.querySelector(".d2h-code-linenumber").innerText);
+            const existingComment = document.querySelector(`#d2h-inline-comment-line-${line_no}`);
+            if (!existingComment) {
+                insertNewInlineCommentWrapperBelowRow(
+                    lineElement,
+                    line_no,
+                );
+            }
+            const targetInlineCommentWrapper = document.querySelector(`#d2h-inline-comment-line-${line_no}`);
             createNewEditableInlineComment(tr_element);
         });
     });
+
+    const inline_comments = MP["diffs"][0]["inline_comments"];
+    console.log(inline_comments);
+    console.log("INSERTING INLINE COMMENTS")
+    inline_comments.forEach(LPyd_inline_comment_thread => {
+        createOrUpdateInlineComment(LPyd_inline_comment_thread);
+    });
+    console.log("DONE INSERTING INLINE COMMENTS")
+    console.log("INSERTING CODE COMMENT CARDS")
+    createCodeCommentCards(inline_comments);
+    console.log("DONE INSERTING CODE COMMENT CARDS")
 }
 
 // create a new card that contains X number of lines before the target line number
-function createCodeCommentCards(groupedComments) {
+function createCodeCommentCards(LPyd_inline_comment_threads) {
     // groupedComments.forEach(fileName => {
-    for (const file in groupedComments) {
-        for (const line_no in groupedComments[file]) {
-            const comments = groupedComments[file][line_no];
+    console.log(LPyd_inline_comment_threads)
+    LPyd_inline_comment_threads.forEach(comment_thread => {
+        console.log(comment_thread)
+        console.log(`comment_thread.file: ${comment_thread.file}`)
+        console.log(`comment_thread.line_no: ${comment_thread.line_no}`)
+        const commentCard = document.createElement("div");
+        commentCard.classList.add("d2h-code-comment-card");
+        const header = document.createElement("div");
+        header.classList.add("d2h-code-comment-card-header");
+        const fileName = document.createElement("h3");
+        fileName.innerText = comment_thread.file;
+        const diffTable = document.createElement("table");
+        diffTable.classList.add("d2h-diff-table");
+        const diffTbody = document.createElement("tbody");
+        diffTbody.classList.add("d2h-diff-tbody");
+        const commentsContainer = document.createElement("div");
+        commentsContainer.classList.add("d2h-code-comment-card-comments-container");
 
-            const commentCard = document.createElement("div");
-            commentCard.classList.add("d2h-code-comment-card");
-            const header = document.createElement("div");
-            header.classList.add("d2h-code-comment-card-header");
-            const fileName = document.createElement("h3");
-            fileName.innerText = file;
-            const diffTable = document.createElement("table");
-            diffTable.classList.add("d2h-diff-table");
-            const diffTbody = document.createElement("tbody");
-            diffTbody.classList.add("d2h-diff-tbody");
-            const commentsContainer = document.createElement("div");
-            commentsContainer.classList.add("d2h-code-comment-card-comments-container");
-
-            commentCard.appendChild(header);
-            commentCard.appendChild(diffTable);
-
-
-            const diffLines = getLinesAroundTargetLine(comments[0].file, comments[0].line_no, 4, 0);
-            // copy the diff lines into the diffTbody
-            diffLines.forEach(line => {
-                const clonedLine = line.cloneNode(true); // clone the line element
-                diffTbody.appendChild(clonedLine); // append the cloned line element
-            });
-            diffTable.appendChild(diffTbody);
+        commentCard.appendChild(header);
+        commentCard.appendChild(diffTable);
 
 
-            // append comments 
-            comments.forEach(comment => {
-                commentsContainer.appendChild(createInlineCommentElement(comment));
-            });
-            commentCard.appendChild(commentsContainer);
-
-            // insert the comment card into the "#conversation" div
-            document.querySelector("#conversation").appendChild(commentCard);
-
-
-        }
+        const diffLines = getLinesAroundTargetLine(comment_thread.file, comment_thread.line_no, 4, 0);
+        // copy the diff lines into the diffTbody
+        diffLines.forEach(line => {
+            const clonedLine = line.cloneNode(true); // clone the line element
+            diffTbody.appendChild(clonedLine); // append the cloned line element
+        });
+        diffTable.appendChild(diffTbody);
 
 
-    }
+        // append comments 
+        comment_thread["messages"].forEach(comment_message => {
+            commentsContainer.appendChild(
+                createInlineCommentElement(
+                    username = comment_message.author_username,
+                    display_name = comment_message.author_display_name,
+                    message = comment_message.message,
+                    date = comment_message.date,
+                )
+            );
+        });
+        commentCard.appendChild(commentsContainer);
+
+        // insert the comment card into the "#conversation" div
+        document.querySelector("#conversation").appendChild(commentCard);
+
+
+    });
 }
 
 // given a row of the diff 
@@ -722,6 +813,8 @@ function fetchMPFromLPyd() {
         .then(data => {
             // Handle the response data here
             MP = data;
+            console.log(data);
+            console.log(MP);
             doInlineCommentsStuff();
         })
         .catch(error => {
