@@ -33,6 +33,11 @@ function cleanup_previous_elements() {
             button.remove();
         });
     }
+    if (document.querySelector(".checkout-changes-locally-button")) {
+        document.querySelectorAll(".checkout-changes-locally-button").forEach(button => {
+            button.remove();
+        });
+    }
 }
 
 
@@ -1024,57 +1029,57 @@ function hideAllBoardCommmentsWithInlineComments() {
     });
 }
 
+function create_checkout_changes_locally_button() {
+    const checkoutChangesLocallyButton = document.createElement("button");
+    checkoutChangesLocallyButton.innerText = "Copy command";
+    checkoutChangesLocallyButton.classList.add("checkout-changes-locally-button");
+
+    // get #remote-add tt element inner text
+    cmd1 = document.querySelector("tt#remote-add").innerText;
+    // get #remote-update tt element inner text
+    cmd2 = document.querySelector("tt#remote-update").innerText;
+    // get #merge-cmd tt element inner text
+    cmd3 = document.querySelector("tt#merge-cmd").innerText;
+    // get branch to checkout
+    cmd3 = cmd3.replace("git merge", "git checkout");
+    // cmd3 = "git switch " + cmd3.replace("git merge ", "").split(" ", 1)[1];
+
+    full_cmd = `${cmd1}\n${cmd2}\n${cmd3}`;
+
+    // add click event listener to copy the command to clipboard
+    checkoutChangesLocallyButton.addEventListener("click", () => {
+        // copy the command to clipboard
+        navigator.clipboard.writeText(full_cmd).then(() => {
+            // then alert to the command that was copied to clipboard
+            alert("Command copied to clipboard:\n\n" + full_cmd);
+        });
+    });
+
+    // insert new row into #proposal-summary table at the end
+    tr = document.createElement("tr");
+    th = document.createElement("th");
+    th.innerText = "Checkout Changes Locally:";
+    td = document.createElement("td");
+    td.appendChild(checkoutChangesLocallyButton);
+    
+    tr.appendChild(th);
+    tr.appendChild(td);
+    document.querySelector("table#proposal-summary").appendChild(tr);
+
+    return checkoutChangesLocallyButton;
+}
 
 
 function main() {
     showdown.setFlavor('github');
+    create_checkout_changes_locally_button();
     hideAllBoardCommmentsWithInlineComments();
     cleanup_previous_elements()
-    // find number of comments on MP
     doCiCdStuff();
     // doMarkdownCommentsStuff()
-    // doCustomDiffStuff();
     document.querySelectorAll(".boardCommentBody").forEach((comment) => {
         // console.log(comment.innerText)
     });
-
-    // waitForInlineCommentsAndFetch();
-
-
-    // const newestDiffTitle = document.querySelector(".diff-navigator select").innerText;
-    // console.log(newestDiffTitle);
-
-    // JUST DEBUGING STUFF : DELETE ME
-    // const diffElement = findDiffElementByFileName("junk.py");
-    // console.log(diffElement);
-    // const lineElement = findDiffLineElementByLineNumber(diffElement, 47);
-    // console.log(lineElement);
-    // console.log(extractFileAndLineFromDiff(47, DIFF_TEXT))
-
-    // disable this and just do simple stuff with what we can from web page for now
-    // fetchMPFromLPyd()
-
-    // const test_url = "http://google.com"
-    // // fetch test_url to make sure url fetching is working
-    // fetch(test_url, { mode: 'cors' })
-    //     .then(response => {
-    //         if (!response.ok) {
-    //             throw new Error('Network response was not ok');
-    //         }
-    //         return response.text();
-    //     })
-    //     .then(data => {
-    //         // Handle the response data here
-    //         console.log(data);
-    //     })
-    //     .catch(error => {
-    //         // Handle errors here
-    //         console.error('There was a problem with the fetch operation:', error);
-    //     });
-    
-
-    // disabling calling this from here for now.
-    // doCustomDiffStuff();
     
     // whenever .diff-content changes, call fetchInlineComments and doCustomDiffStuff
     const diffContent = document.querySelector(".diff-content");
