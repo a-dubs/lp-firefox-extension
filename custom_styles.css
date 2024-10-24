@@ -61,6 +61,10 @@ blockquote {
     border: 1px solid #555;
     border-radius: 1px;
     cursor: pointer;
+    /* background-color: #e6eaef; */
+    background-color: #fff;
+    margin-top:2px;
+    border-radius: 5px;
 }
 
 .d2h-file-header .collapse-button:hover {
@@ -82,8 +86,24 @@ blockquote {
 .d2h-file-header {
     position: sticky;
     top: 0;
-    background-color: #f5f5f5;
-    z-index: 1;
+    background-color: #e6eaef;
+    z-index: 10;
+    border-radius: 5px 5px 0 0;
+    border-bottom: 1px solid #555;
+}
+
+.d2h-tag {
+    padding: 9px 9px 6px 9px;
+    border-radius: 5px;
+    margin-left: 10px;
+    line-height: 1;
+    background-color: transparent;
+    font-weight: bold;
+} 
+
+.d2h-file-side-diff {
+    /* In side-by-side mode, if editable comment is inserted on opposite side, default background color is exposed */
+    background-color: rgb(241, 241, 241);
 }
 
 /* Make the stupid private banner only display at top of page and not sticky/fixed */
@@ -97,6 +117,10 @@ a.d2h-file-name {
 }
 a.d2h-file-name:hover {
     text-decoration: underline;
+}
+
+.d2h-file-name {
+    margin-top: 2px;
 }
 
 button.show-old-diff-button {
@@ -124,35 +148,46 @@ button#diff-view-switcher:hover {
     display: none;
 } 
 
+.d2h-file-wrapper {
+    border: 1px solid #555;
+    border-radius: 5px;
+}
+
 .d2h-inline-comment-row {
     background-color: #fff;
     padding: 10px;
-    position: unset;
+    /* TODO: make it so that border on top and bottom can actually show - might need to insert new element wrapper to do
+    so*/
+    border-top: 1px solid #555;
+    border-bottom: 1px solid #555;
 }
 
 .d2h-inline-comment-card
 {
     max-width: 1000px;
-    border-radius: 10px;
+    border-radius: 5px;
     border: 1px solid #555;
     margin: 10px;
-    padding: 10 5px;
+    /* padding: 0px 5px 5px 5px; */
 }
 
 d2h-inline-comment-thread {
     border-top: 1px solid #000;
+    padding-top: 5px;
 }
 .d2h-inline-comment {
-    padding: 5px;
+    /* padding: 0 5px 5px 5px; */
     max-width: 100%;
     /* border: 1px solid #555; */
     overflow: hidden;
     box-sizing: border-box;
+    background-color: #fff;
+    border-radius: 5px;
 }
 .d2h-inline-comment-header {
     /* border-bottom: 1px solid #000; */
     padding: 5px 10px;
-    font-size: 12px;
+    font-size: 13px;
     display: flex;
     flex-direction: row;
     align-items: flex-start;
@@ -193,7 +228,7 @@ d2h-inline-comment-thread {
 }
 
 .markdown p {
-    font-size: 12px;
+    font-size: 13px;
     margin:0;
     margin-top: 5px;
     margin-bottom: 10px;
@@ -220,8 +255,12 @@ d2h-inline-comment-thread {
     border-radius: 3px;
     line-height: 1.5;
     padding: 2px;
-    font-size: 12px;
+    font-size: 13px;
     font-family: "Ubuntu Mono variable", "Ubuntu Mono", Consolas, Monaco, Courier, monospace;
+}
+
+.markdown p br {
+    display: none;
 }
 
 .d2h-code-comment-card {
@@ -241,14 +280,14 @@ d2h-inline-comment-thread {
 
 .d2h-diff-table {
     overflow: scroll !important;
-    font-size:12px !important;
+    font-size:13px !important;
     line-height: 1.5 !important;
     font-family: "Ubuntu Mono variable", "Ubuntu Mono", Consolas, Monaco, Courier, monospace !important;
 }
 
 .d2h-code-comment-card .d2h-inline-comment {
-    margin: 0;
-    border: none;
+    /* margin: 0;
+    border: none; */
 }
 
 .d2h-code-comment-card-header {
@@ -288,7 +327,7 @@ d2h-inline-comment-thread {
     border-radius: 3px;
     cursor: pointer;
     box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2);
-    margin: 5px 2px;
+    margin: 0px 2px;
     border: 1px solid #555;
     width: 140px;
     float:right;
@@ -335,91 +374,82 @@ d2h-inline-comment-thread {
     margin: 5px 2px;
     background-color: #fff;
     margin-left: 15px;
-    margin-bottom: 5px;
 } 
 /* TODO: add more margin to bottom of reply button when inside .d2h-inline-comment-thread */
 .d2h-inline-comment-thread .d2h-inline-comment-reply-button {
     margin-bottom: 15px !important;
 }
-*/
+.d2h-code-comment-card .d2h-inline-comment-reply-button {
+    margin-bottom: 5px !important;
+}
 
-/*
-
-    const tabs = document.createElement("div");
-    tabs.classList.add("d2h-inline-comment-tabs");
-    const tab1 = document.createElement("button");
-    tab1.innerText = "Edit Comment";
-    tab1.classList.add("d2h-inline-comment-tab");
-    tab1.classList.add("edit-comment");
-    tab1.classList.add("active");
-    const tab2 = document.createElement("button");
-    tab2.innerText = "Preview Comment";
-    tab2.classList.add("d2h-inline-comment-tab");
-    tab2.classList.add("preview-comment");
-    tabs.appendChild(tab1);
-    tabs.appendChild(tab2);
-    
-    */
 
 .d2h-inline-comment-tabs {
+    border-radius: 5px 5px 0 0;
     position: relative;
+    background-color: #e6eaef !important;
+    border-bottom: 1px solid #555;
 }
 .d2h-inline-comment-tab {
+    color: #555;
+    border-radius: 5px 5px 0px 0px;
     padding: 5px 10px 5px 10px;
-    border: 1px solid #555;
-    border-radius: 3px;
     cursor: pointer;
-    /* box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5); */
-    margin: -1px 0px;
     display: inline-block;
-    background-color: #aaa;
-    color: black;
+    background-color: #e6eaef;
     z-index: 0;
     position: relative;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
+    border: none;
+    /* margin-bottom: -1px; */
 }
 .d2h-inline-comment-tab.active {
-    background-color: #ddd;
-    color: black;
-    /* z-index: 2; */
-    /* border-bottom: none; */
+    background-color: #fff;
+    color: #000;
+    z-index: 2;
+    border: 1px solid #555;
+    border-bottom: 1px solid #fff;
 }
 .d2h-inline-comment-tab:hover {
-    background-color: #eee;
-    color: black;
+    color: #000;
 }
 .d2h-inline-comment-tab.edit-comment {
-    border-right: none
+    /* border-right: none */
+    /* margin: 0px 1px 0px 0px !important; */
+    margin-top: 0px;
+    margin-left: 0px;
 }
 .d2h-inline-comment-tab.preview-comment {
-    border-left: none;
+    margin-top: 0px;
+    margin-left: 0px;
 }
 .d2h-inline-comment-tab.edit-comment.active {
-    border-right: 1px solid #555;
-
+    margin-top: -1px;
+    margin-left: -1px;
 }
 .d2h-inline-comment-tab.preview-comment.active {
-    border-left: 1px solid #555;
-
+    margin-top: -1px;
+    margin-left: 0px;
 }
 .d2h-inline-comment-textarea {
-    padding: 12px;
+    padding: 13px;
     border-radius: 5px;
     border: 1px solid #555;
     width: 100%;
-    height: 120px;
+    min-height: 120px;
     overflow: hidden;
     box-sizing: border-box;
     position: relative;
     z-index: 1;
     max-width: 100%;
     font-family: "Ubuntu variable", Ubuntu, "Bitstream Vera Sans", "DejaVu Sans", Tahoma, sans-serif !important;
+    line-height: 1.4;
 }
 .d2h-inline-comment-preview {
-    padding: 12px;
-    border-radius: 5px;
-    border: 1px solid #555;
+    padding: 10px;
+    /* border-radius: 5px; */
+    /* border: 1px solid #555; */
     width: 100%;
     height: auto;
     overflow: hidden;
@@ -431,13 +461,21 @@ d2h-inline-comment-thread {
 .d2h-inline-comment-content-area {
     position: relative;
     z-index: 1;
-    border-radius: 10px;
-    border: 1px solid #555;
-    padding: 20px;
+    border-radius: 5px;
+    /* border: 1px solid #555; */
+    padding: 5px;
+}
+
+.d2h-inline-comment-footer {
+    padding: 0px 5px 5px 5px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    flex-direction: row-reverse;
 }
 
 /* Spinner style */
-.custom-spinner::after {
+.custom-button-spinner::after {
     content: "";
     display: inline-block;
     width: 16px;
@@ -446,14 +484,7 @@ d2h-inline-comment-thread {
     border-right-color: transparent;
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
-    /* margin-left: 1em; */
-    position: absolute;
-}
-
-/* Disable button styling */
-button.disabled {
-    pointer-events: none;
-    opacity: 0.6;
+    margin-left: -12px;
 }
 
 /* Spinner animation keyframes */
@@ -461,4 +492,3 @@ button.disabled {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-  
