@@ -1,6 +1,6 @@
 # Launchpad Enhanced Diff Viewer Firefox Extension
 
-![Static Badge](https://img.shields.io/badge/version-v0.1.0-orange)
+![Static Badge](https://img.shields.io/badge/version-v0.2.0-orange)
 
 This Firefox extension enhances the code review experience on Launchpad by introducing several improvements similar to GitHub's diff viewing capabilities. It utilizes the `diff2html` library to render diffs in a more readable and user-friendly format. Key features include:
 
