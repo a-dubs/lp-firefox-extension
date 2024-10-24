@@ -10,13 +10,27 @@ This Firefox extension enhances the code review experience on Launchpad by intro
 - **Inline Comments Enhancement:** Improves the visibility and interaction with inline comments.
 - **Diff View Customization:** Allows users to switch between unified and side-by-side diff views.
 - **Collapsible File Diffs:** Users can collapse or expand file diffs to focus on changes that matter.
+- **Easily Checkout MP Locally:** At the top of an MP, under the status info, you will find a button that will copy the
+  full set of commands to checkout the MP locally that can be run from the terminal inside the project directory
+  (assuming you already have the project cloned).
+- **Markdown Rendering:** Comments are rendered in Markdown format, making them more readable and organized.
+- **Improved Inline Comments:** Inline comments can now be added from the custom diff viewer, and have built-in
+  Markdown support.
+- **Post Individual Inline Comments:** Inline comments can now be posted individually, without having to post all
+  comments at once or manually leave a comment on the MP.
+- **Outdated Inline Comments Shown in Timeline:** When viewing an MP, inline comments from outdated diffs are shown in
+  the timeline and can be easily replied to. No more having to switch between diffs to see old comments.
 
 ## Installation
 
-1. Clone or download this repository to your local machine.
-2. Open Firefox and navigate to `about:debugging`.
-3. Click on "This Firefox" (or "Load Temporary Add-on" in older versions).
-4. Navigate to the directory where you downloaded the extension and select the `manifest.json` file.
+1. Go to the [releases page](https://github.com/a-dubs/lp-firefox-extension/releases/) and download the latest `.xpi`
+   file.
+2. Open Firefox and navigate to `about:addons`.
+3. Click on the gear icon in the top-right corner and select "Install Add-on From File..."
+4. Choose the `.xpi` file you downloaded and follow the prompts to install the extension.
+5. Go to https://github.com/a-dubs/launchpad-microservice and follow the instructions to install and setup the
+   microservice that will run on your local machine. This is necessary for posting comments.
+6. Profit 🚀
 
 ## Usage
 
@@ -25,7 +39,9 @@ After installation, the extension automatically activates when you visit a diff 
 - **Switch Diff View:** Use the "View as side-by-side" or "View as unified" button at the top of the diff to toggle between diff views.
 - **Collapse/Expand Files:** Click on the "Collapse" or "Expand" button next to each file name in the diff to manage your view of changes.
 - **Access Inline Comments:** Inline comments are displayed directly below the relevant line in the diff. Click on gutter numbers to add new inline comments.
-- **View CI/CD Status:** The CI/CD status is visible at the top of the merge proposal summary, providing a quick overview of the build status.
+- **View CI/CD Status:** The CI/CD status is visible at the top of the merge proposal summary, providing a quick
+  overview of the build status.
+
 
 ## Contributing
 
