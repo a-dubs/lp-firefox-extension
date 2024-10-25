@@ -2036,11 +2036,16 @@ else {
 // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Implement_a_settings_page
 
 
+
+
+////////////////////////////////////////// NEW TIMELINE STUFF //////////////////////////////////////////
+
 // Planning of events timeline
 /**
  * - MP Comment is left. One of the following must be attached:
  *   - Comment message
- *   - Inline comment(s)
+ *   - Inline comment(s) - do not show inline comments independently in the timeline, they should be inserted into the
+ *     appropriate code comment card
  *   - Review Vote (display the review vote in the timeline, not underneath the comment)
  *   - If there is no comment message, just have the base level timeline event say something like "USER requested
  *     information on Sep 16" or "USER requested changes on Sep 16"
@@ -2050,8 +2055,89 @@ else {
  * - CI/CD Result (with link to job run)
  * - review requested
  * - MP status changes (work in progress, needs review, approved, rejected, merged)
- * 
- * 
- * 
- */
+*/
+function getMPTimelineEvents() {
+    // each event will be represented by an object with the following properties:
+    // - date
+    // - event type specific details object
+    // - function to render the event object
+    // -
 
+    /** categories of events that will be gathered and then all combined into one array and sorted by date:
+     * - comments with optional inline comments attached
+     *   - inline comments should be sorted by original line number in diff and then sorted by date in their threads
+     * 
+    */ 
+}
+
+// This will allow for 
+function parseReviewVotesFromAPIResponse(reviewVotes) {
+    /*
+    reviewVote object:
+    {
+        "self_link": "https://code.launchpad.net/api/devel/~a-dubs/cloudware/+git/oraclelib/+merge/455155/+review/714508",
+        "web_link": "https://code.launchpad.net/~a-dubs/cloudware/+git/oraclelib/+merge/455155/+review/714508",
+        "resource_type_link": "https://code.launchpad.net/api/devel/#code_review_vote_reference",
+        "branch_merge_proposal_link": "https://code.launchpad.net/api/devel/~a-dubs/cloudware/+git/oraclelib/+merge/455155",
+        "date_created": "2024-10-24T15:44:58.328532+00:00",
+        "registrant_link": "https://code.launchpad.net/api/devel/~a-dubs",
+        "reviewer_link": "https://code.launchpad.net/api/devel/~cloudware",
+        "review_type": null,
+        "comment_link": null,
+        "is_pending": true,
+        "http_etag": "\"90941231d652a09a261bdcbaef5859946d516e8c-34de75b5cc67b6e8c408a003ad43efeb3d5f2aca\""
+    }
+    */
+    // keep date_created, registrant_link, reviewer_link, is_pending, review_type
+    const prasedReviewVotes = [];
+    for (const reviewVote of reviewVotes) {
+        prasedReviewVotes.push({
+            date_created: reviewVote.date_created,
+            registrant_link: reviewVote.registrant_link,
+            reviewer_link: reviewVote.reviewer_link,
+            is_pending: reviewVote.is_pending,
+            review_type: reviewVote.review_type,
+        });
+    }
+    console.log("parsed review votes:", prasedReviewVotes);
+    return prasedReviewVotes;
+}
+
+function fetchReviewVotesFromAPI() {
+    // use /votes API endpoint to fetch review votes based on the MP URL
+    const api_url = convertMPUrlToAPIUrl(document.location.href) + "/votes";
+    console.log("fetching review votes from API at url:", api_url);
+    fetch(api_url)
+        .then(response => response.json())
+        .then(data => {
+            const reviewVotes = data.entries;
+            console.log("review votes:", reviewVotes);
+            return parseReviewVotesFromAPIResponse(reviewVotes);
+        })
+        .catch(error => console.error('Error fetching review votes from API:', error));
+}
+
+function fetchCommentsFromAPI() {
+    // fetch from microservice @ /mp/comments with the MP URL encoded as query parameter
+    const mpUrl = document.location.href;
+    const lp_microservice_url = "http://localhost:8000/mp/comments";
+    const encodedMPUrl = encodeURIComponent(mpUrl);
+    const url = `${lp_microservice_url}?mp_url=${encodedMPUrl}`;
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log("fetched comments:", data);
+            return data;
+        })
+        .catch(error => console.error('Error fetching comments from API:', error));
+
+}
+
+function associateInlineCommentsWithComments(comments, inlineComments) {
+    // for each comment, find the inline comments that are associated with it
+    // and add them to the comment object
+    // if the author of the inline comment is the same as the author of the comment
+    // and the inline comment and comment have the same date, then the inline comment is a reply to the comment
+
+}
