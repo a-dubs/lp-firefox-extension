@@ -6,6 +6,8 @@ console.log("LP Firefox extension loaded")
 // https://code.launchpad.net/~a-dubs/cloudware/+git/oraclelib/+merge/455155
 // https://code.launchpad.net/~gjolly/cloudware/+git/cinteract/+merge/461516
 
+const MICROSERVICE_BASE_URL = "http://localhost:8698";
+
 var DIFF_TEXT = "";
 var PREVIEW_DIFF_TEXTS = {};
 var DONE_FETCHING_PREVIEW_DIFF_TEXTS = false;
@@ -1098,38 +1100,56 @@ async function parseInlineCommentsFromAPIResponse(apiResponse, preview_diff_id) 
     return parsedComments;
 }
 
-async function fetchDiffTextFromAPI(preview_diff_id) {
-    const mpUrl = document.location.href;
-    const target_url = `${mpUrl}/+preview-diff/${preview_diff_id}/+files/preview.diff`;
-    console.log("fetching diff text from API for preview diff at url:", target_url);
+async function fetchDiffTextFromMicroservice(preview_diff_id) {
+
+    const url = MICROSERVICE_BASE_URL + "/preview_diff/text"
+    
+    // pass preview_diff_id and mp_url as query parameters
+    const params = {
+        preview_diff_id: preview_diff_id,
+        mp_url: document.location.href,
+    };
+    // we are sending url encoded data and recieving text
+    const urlParams = new URLSearchParams(params).toString();
+    const url_with_params = url + "?" + urlParams;
 
     try {
-        const response = await fetch(target_url, {
+        const response = await fetch(url_with_params, {
             method: "GET",
             headers: {
-                "Content-Type": "application/json"
-            }
+                "Content-Type": "application/x-www-form-urlencoded",
+            },         
         });
+
+        if (!response.ok) {
+            console.error(`Error fetching diff text from API for preview diff ${preview_diff_id}:`, response);
+            return ""; // Return empty string on error to avoid breaking downstream logic
+        }
         const data = await response.text();
+        console.log(`fetched diff text from API for preview diff ${preview_diff_id}`);
         return data;
-    } catch (error) {
+    }
+    catch (error) {
         console.error('Error fetching diff text from API:', error);
         return ""; // Return empty string on error to avoid breaking downstream logic
     }
 }
-
-function fetchAllPreviewDiffTexts() {
+async function fetchAllPreviewDiffTexts() {
+    const startTime = performance.now();
     const all_preview_diff_ids = get_all_available_preview_diff_ids();
 
     // Create an array of promises, one for each preview diff ID
     const fetchPromises = all_preview_diff_ids.map(preview_diff_id =>
-        fetchDiffTextFromAPI(preview_diff_id).then(diffText => {
+        fetchDiffTextFromMicroservice(preview_diff_id).then(diffText => {
             PREVIEW_DIFF_TEXTS[preview_diff_id] = diffText;
         })
     );
 
     // Return a Promise that resolves when all fetch operations are complete
-    return Promise.all(fetchPromises);
+    return Promise.all(fetchPromises).then(() => {
+        const endTime = performance.now();
+        console.log(`it took ${endTime - startTime} milliseconds to fetch all diff texts`);
+    });
 }
 
 /**
@@ -1686,7 +1706,7 @@ async function deleteInlineComment(line_no, preview_diff_id) {
     console.log(`deleting inline comment for line ${line_no} in preview diff ${preview_diff_id}`);
 
     const mpUrl = document.location.href;
-    const lp_microservice_url = "http://localhost:8000/cancel_inline_draft_comment";
+    const lp_microservice_url = MICROSERVICE_BASE_URL + "/cancel_inline_draft_comment";
 
     try {
         const response = await fetch(lp_microservice_url, {
@@ -1716,7 +1736,7 @@ async function saveDraftInlineComment(line_no, preview_diff_id, commentText) {
     // str)
 
     const mpUrl = document.location.href;
-    const lp_microservice_url = "http://localhost:8000/save_draft_inline_comment";
+    const lp_microservice_url = MICROSERVICE_BASE_URL + "save_draft_inline_comment";
 
     console.log("saving draft comment: " + commentText + " to preview diff " + preview_diff_id + " on line " + line_no);
 
@@ -1747,7 +1767,7 @@ async function postInlineComment(line_no, preview_diff_id, commentText) {
     const mpUrl = document.location.href;
 
     // send inline comments to local API
-    const lp_microservice_url = "http://localhost:8000/submit_and_post_inline_comment";
+    const lp_microservice_url = MICROSERVICE_BASE_URL + "/submit_and_post_inline_comment";
     console.log("posting comment: " + commentText + " to preview diff " + preview_diff_id + " on line " + line_no);
 
     try {
