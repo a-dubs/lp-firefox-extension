@@ -158,8 +158,8 @@ button#diff-view-switcher:hover {
     padding: 10px;
     /* TODO: make it so that border on top and bottom can actually show - might need to insert new element wrapper to do
     so*/
-    border-top: 1px solid #555;
-    border-bottom: 1px solid #555;
+    /* border-top: 1px solid #555; */
+    /* border-bottom: 1px solid #555; */
 }
 
 .d2h-inline-comment-card
