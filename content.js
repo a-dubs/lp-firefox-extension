@@ -1736,7 +1736,7 @@ async function saveDraftInlineComment(line_no, preview_diff_id, commentText) {
     // str)
 
     const mpUrl = document.location.href;
-    const lp_microservice_url = MICROSERVICE_BASE_URL + "save_draft_inline_comment";
+    const lp_microservice_url = MICROSERVICE_BASE_URL + "/save_draft_inline_comment";
 
     console.log("saving draft comment: " + commentText + " to preview diff " + preview_diff_id + " on line " + line_no);
 
