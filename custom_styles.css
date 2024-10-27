@@ -171,8 +171,7 @@ button#diff-view-switcher:hover {
     /* padding: 0px 5px 5px 5px; */
 }
 
-d2h-inline-comment-thread {
-    border-top: 1px solid #000;
+.d2h-inline-comment-thread {
     padding-top: 5px;
 }
 .d2h-inline-comment {
@@ -371,7 +370,7 @@ d2h-inline-comment-thread {
     border-radius: 3px;
     cursor: pointer;
     box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
-    margin: 5px 2px;
+    margin: 10px 2px;
     background-color: #fff;
     margin-left: 15px;
 } 
@@ -382,6 +381,7 @@ d2h-inline-comment-thread {
 .d2h-code-comment-card .d2h-inline-comment-reply-button {
     margin-bottom: 5px !important;
 }
+
 
 
 .d2h-inline-comment-tabs {

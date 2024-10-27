@@ -1336,7 +1336,6 @@ function createCommentThreadElement(comments, draftComment, inDiffViewer) {
         commentThread.appendChild(createInlineCommentElement(comment));
     });
 
-
     const replyButton = document.createElement("button");
     replyButton.classList.add("d2h-inline-comment-reply-button");
     replyButton.innerText = "Reply";
@@ -1476,9 +1475,13 @@ function add_inline_comments_to_custom_diff() {
                     if (target_gutter) {
                         if (comments.length > 0) {
                             // Insert comment thread if inline comments exist.
+                            const commentThreadElement = createCommentThreadElement(comments, draftComment, true);
+                            const commentCardElement = document.createElement("div");
+                            commentCardElement.classList.add("d2h-inline-comment-card");
+                            commentCardElement.appendChild(commentThreadElement);
                             insertInlineCommentElementBelowLine(
                                 target_gutter.parentElement,
-                                createCommentThreadElement(comments, draftComment, true),
+                                commentCardElement,
                                 parseInt(line_no)
                             );
                         } else if (draftComment) {
