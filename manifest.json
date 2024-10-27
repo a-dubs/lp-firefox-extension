@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "CPC Launchpad Extension",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Extension to improve code review process experience for the CPC Team at Canonical. Made with love by a-dubs",
     "browser_specific_settings": {
         "gecko": {
