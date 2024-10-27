@@ -1350,18 +1350,14 @@ function createCommentThreadElement(comments, draftComment, inDiffViewer) {
         return success;
     }
 
-    if (inDiffViewer) {
-        async function saveDraftCommentCallback(line_no, preview_diff_id, commentText) {
-            // save draft comment callback
-            const success = await saveDraftInlineComment(line_no, preview_diff_id, commentText);
-            if (success) {
-                // show the reply button again
-                replyButton.style.display = "block";
-            }
-            return success;
+    async function saveDraftCommentCallback(line_no, preview_diff_id, commentText) {
+        // save draft comment callback
+        const success = await saveDraftInlineComment(line_no, preview_diff_id, commentText);
+        if (success) {
+            // show the reply button again
+            replyButton.style.display = "block";
         }
-    } else {
-        saveDraftCommentCallback = null;
+        return success;
     }
 
     async function postInlineCommentCallback(line_no, preview_diff_id, commentText) {
@@ -1381,13 +1377,14 @@ function createCommentThreadElement(comments, draftComment, inDiffViewer) {
     }
 
     replyButton.addEventListener("click", () => {
+        console.log("is in diff viewer:", inDiffViewer);
         // only execute if the reply button is visible
         if (replyButton.style.display !== "none") {
             replyButton.style.display = "none";
             const editableComment = createEditableCommentElement(
                 cancelCommentCallback,
                 postInlineCommentCallback,
-                saveDraftCommentCallback,
+                inDiffViewer ? saveDraftCommentCallback : null,
                 deleteCommentCallback,
                 comments[0].line_number_in_original_diff,  // line_number_in_original_diff
                 comments[0].preview_diff_id,  // preview_diff_id
@@ -1407,7 +1404,7 @@ function createCommentThreadElement(comments, draftComment, inDiffViewer) {
         const draftCommentElement = createEditableCommentElement(
             cancelCommentCallback,
             postInlineCommentCallback,
-            saveDraftCommentCallback,
+            inDiffViewer ? saveDraftCommentCallback : null,
             deleteCommentCallback,
             draftComment.line_number_in_original_diff,
             draftComment.preview_diff_id,
