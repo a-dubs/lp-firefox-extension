@@ -73,7 +73,7 @@ function findHiddenDiffElementByFileName(fileName, preview_diff_id) {
     const diffViewer = getHiddenDiffViewerElement(preview_diff_id);
     const file_diffs = diffViewer.querySelectorAll(".d2h-file-wrapper");
     for (const file_diff of file_diffs) {
-        const file_name = file_diff.querySelector(".d2h-file-name").innerText;
+        const file_name = get_file_name_from_diff_element(file_diff);
         if (file_name === fileName) {
             return file_diff;
         }
