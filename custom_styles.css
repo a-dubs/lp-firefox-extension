@@ -45,7 +45,7 @@ blockquote {
 .markdown li {
     /* list-style-position: inside; */
     list-style-type: disc;
-    margin-top: -20px;
+    /* margin-top: -20px; */
 }
 .markdown ul {
     padding-left: 20px;
@@ -492,3 +492,186 @@ button#diff-view-switcher:hover {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* function renderCommentEvent(commentWithThread) {
+    **
+     * [Mandatory] Render first line (review vote / type of comment) in timeline 
+     * [Optional] Render main comment message in timeline
+     * [Optional] Render new inline comments in timeline (only render if comment is first in thread, and then render all replies)
+     *
+    const comment = commentWithThread.comment;
+    const inlineCommentsThreads = commentWithThread.inlineCommentsThreads;
+
+    const commentElement = document.createElement("div");
+    commentElement.classList.add("timeline-comment");
+
+    // render the first line as a flex div that starts with an icon and with a p and various span elements 
+    const iconDiv = document.createElement("div");
+    iconDiv.classList.add("timeline-review-vote-icon");
+    // set icon based on comment's vote (LP_ReviewVoteString) which is either Approve, Needs Fixing, Needs Info,
+    // Abstain, Disapprove, Needs Resubmitting, or ""
+
+
+    const reviewVoteDiv = document.createElement("div");
+    reviewVoteDiv.classList.add("timeline-review-vote");
+    
+    const reviewIconElement = document.createElement("div");
+    reviewIconElement.innerText = getReviewIcon(comment.vote);
+    reviewVoteDiv.appendChild(reviewIconElement);
+
+    const reviewTextString = getReviewText(comment.vote) + " on " + new Date(comment.date_created).toLocaleDateString();
+    const reviewTextElement = document.createElement("p");
+    reviewTextElement.innerText = reviewTextString;
+    reviewTextElement.classList.add("timeline-review-vote-text");
+    reviewVoteDiv.appendChild(reviewTextElement);
+    commentElement.appendChild(reviewVoteDiv);
+
+    console.log("comment message: ", comment.message);
+    // do comment message / body
+    if (comment.message) {
+        const commentMessageElement = document.createElement("div");
+        commentMessageElement.classList.add("timeline-comment-message");
+        const commentMessageText = document.createElement("p");
+        commentMessageText.classList.add("timeline-comment-message-text");
+        commentMessageText.innerText = comment.message;
+        commentMessageElement.appendChild(commentMessageText);
+        commentElement.appendChild(commentMessageElement);
+    }
+
+    // do inline comments threads
+    if (inlineCommentsThreads?.length > 0) {
+        const inlineCommentsThreadElement = document.createElement("div");
+        // do inline comments thread / code comment cards
+        for (const inlineCommentsThread of inlineCommentsThreads) {
+            // create code comment card element
+            const codeCommentCardElement = createCodeCommentCardElement(inlineCommentsThread, comment.preview_diff_id, null);
+            inlineCommentsThreadElement.appendChild(codeCommentCardElement());
+        }    
+        inlineCommentsThreadElement.classList.add("timeline-inline-comments-thread");
+        commentElement.appendChild(inlineCommentsThreadElement);
+    }
+    return commentElement;
+} */
+
+/* we want the timeline to look like gtihub PR review convsersation timeline */
+
+#mp-timeline {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 50px 0;
+}
+
+.timeline-event-wrapper {
+    display: flex;
+    flex-direction: row;
+    /* background-color: #EEE; */
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+.timeline-event-gutter {
+    margin-right:10px;
+    height: auto;
+    /* background-color: #FCC; */
+    position: relative;
+}
+
+.timeline-event-gutter-line {
+    position: absolute;
+    left: 12px;
+    width: 1px;
+    height: 100%;
+    border-left: 2px solid #555;
+    padding-bottom: 30px;
+    z-index: -1;
+}
+
+
+.timeline-comment-profile-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 1px solid #555;
+    background-color: #ddd;
+    overflow: hidden;
+}
+
+.timeline-comment-profile-icon img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.timeline-comment-event {
+    display: flex;
+    flex-direction: column;
+    max-width: 1000px;
+    width: 100%;
+    /* padding: 10px 0px; */
+    /* background-color: #CFC; */
+}
+
+/* make review vote div flex to align icon and text in a row */
+.timeline-review-vote {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 0;
+    padding-bottom: 10px;
+    /* background-color: #CCF; */
+}
+
+.timeline-review-vote-icon {
+    margin: 0;
+    padding: 0;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background-color: #ddd;
+    box-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    line-height: 25px;
+}
+
+.timeline-review-vote-text {
+    margin: 0;
+    padding: 0;
+    padding-left: 10px;
+}
+
+.timeline-comment-message {
+    border: 1px solid #555;
+    border-radius: 10px;
+    /* margin: 10px 0; */
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    background: white;
+}
+
+
+.timeline-comment-message-content {
+    /* padding: 10px; */
+    margin: 10px;
+    padding: 0;
+}
+
+.timeline-inline-comments-thread {
+    /* Add grey line to left of element to make look like timeline */
+    padding-left: 20px;
+    /* border-left: 2px solid #555; */
+    padding-top: 20px;
+    margin-top: -10px;
+    margin-left: 11px;
+    position: relative;
+    z-index: 0;
+}
+
+.timeline-comment-message-header {
+    background-color: #e6eaef;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #555;
+}
+

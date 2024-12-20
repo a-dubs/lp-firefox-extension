@@ -450,7 +450,7 @@ function updateDraftCommentState(preview_diff_id, line_number_in_original_diff, 
                 // [{ line_number_in_original_diff: commentText }],
                 basic_inline_comment_map
             )[0];
-            console.log("parsedDraftComment:", parsedDraftComment);
+            // console.log("parsedDraftComment:", parsedDraftComment);
             DRAFT_INLINE_COMMENTS.push(parsedDraftComment);
             if (!GROUPED_DRAFT_INLINE_COMMENTS[preview_diff_id]) {
                 GROUPED_DRAFT_INLINE_COMMENTS[preview_diff_id] = [];
@@ -803,10 +803,16 @@ function getLinesAroundTargetLine(preview_diff_id, fileName, lineNumber, numberO
     const targetLine = linesArray[targetLineIndex];
     const linesAfter = linesArray.slice(targetLineIndex + 1, targetLineIndex + numberOfLinesAfter + 1);
     // combine the before and after lines and the target line into one list and return that
-    console.log(`returning ${linesBefore.concat(targetLine).concat(linesAfter).length} lines around line ${lineNumber} in file ${fileName}`);
+    // console.log(`returning ${linesBefore.concat(targetLine).concat(linesAfter).length} lines around line ${lineNumber} in file ${fileName}`);
     return linesBefore.concat(targetLine).concat(linesAfter);
 }
 
+/**
+ * Creates an inline comment element for the given inline comment object.
+ * 
+ * @param {LP_InlineComment} commentInfo - the inline comment object to create an element for
+ * @returns {HTMLDivElement} - the inline comment element
+ */
 function createInlineCommentElement(commentInfo) {
     // console.log("creating inline comment element for comment: " + commentInfo.commentText)
     const header = document.createElement("div");
@@ -826,9 +832,10 @@ function createInlineCommentElement(commentInfo) {
 
     const date_element = document.createElement("span");
     // convert raw datetime (2024-03-11T16:32:09.664021+00:00) to human-readable format in local timezone
-    const commentDate = new Date(commentInfo.commentDate).toLocaleString();
+    const commentDateString = new Date(commentInfo.date).toLocaleString();
+    // console.log("line 830: ", commentInfo.date)
     date_element.classList.add("d2h-inline-comment-date");
-    date_element.innerText = ` on ${commentDate}`;
+    date_element.innerText = ` on ${commentDateString}`;
     header.appendChild(date_element);
 
 
@@ -1021,8 +1028,8 @@ function findLineNumberInDiff(fileName, lineNumberInFile, diffTxt) {
 // if the image is already fetched, return the local url from the MUGSHOT_URLS map
 // TODO: Caching doesnt work properly when mugshot is requested asychronously by parallel requests
 async function getLocalMugshotUrl(mugshotUrl) {
-    console.log("getting local mugshot url for:", mugshotUrl);
-    console.log("MUGSHOT_URLS:", MUGSHOT_URLS);
+    // console.log("getting local mugshot url for:", mugshotUrl);
+    // console.log("MUGSHOT_URLS:", MUGSHOT_URLS);
     if (mugshotUrl in MUGSHOT_URLS) {
         return MUGSHOT_URLS[mugshotUrl];
     }
@@ -1050,6 +1057,33 @@ async function getLocalMugshotUrl(mugshotUrl) {
     }
 }
 
+
+
+/**
+ * @typedef {Object} LP_InlineComment 
+ * @property {number} line_number_in_original_diff - The line number in the original diff.
+ * @property {string} preview_diff_id - The preview diff ID.
+ * @property {string} file - The file name.
+ * @property {number} line_no - The line number in the file.
+ * @property {string} lineContent - The content of the line.
+ * @property {Person} author - The author of the comment.
+ * @property {string} commentText - The text of the comment.
+ * @property {string} date - The date of the comment.
+ * @property {string} self_type - The type of the object.
+ * 
+ */
+/**
+ * @typedef {Object} LP_Person
+ * @property {string} name - The name of the person.
+ * @property {string} display_name - The display name of the person.
+ * @property {string} description - The description of the person.
+ * @property {string} web_link - The web link of the person.
+ * @property {string} self_link - The self link of the person.
+ * @property {string} logo_link - The logo link of the person.
+ * @property {string} mugshot_link - The mugshot link of the person.
+ * @property {string} local_mugshot_url - The local URL of the person's mugshot that can be used in an <img> tag.
+ * @property {string} self_type - The type of the object.
+ */
 /**
  * 
  * must be called AFTER fetching diff texts and mugshots
@@ -1061,7 +1095,7 @@ async function parseInlineCommentsFromAPIResponse(apiResponse, preview_diff_id) 
 
     let parsedComments = [];
 
-    console.log(`parsing ${apiResponse.length} inline comments from API response`);
+    // console.log(`parsing ${apiResponse.length} inline comments from API response`);
 
     function parsePersonObject(personObject) {
         return {
@@ -1072,6 +1106,7 @@ async function parseInlineCommentsFromAPIResponse(apiResponse, preview_diff_id) 
             self_link: personObject.self_link,
             logo_link: personObject.logo_link,
             mugshot_link: personObject.mugshot_link,
+            self_type: "Person",
         };
     }
 
@@ -1085,18 +1120,19 @@ async function parseInlineCommentsFromAPIResponse(apiResponse, preview_diff_id) 
             line_number_in_original_diff: comment.line_number,
             author: parsePersonObject(comment.person),
             commentText: comment.text,
-            commentDate: comment.date,
+            date: comment.date,
             file: file,
             line_no: line_no,
             lineContent: lineContent,
             preview_diff_id: preview_diff_id,
+            self_type: "InlineComment",
         };
         // use getLocalMugshotUrl to set the local_mugshot_url property
         new_parsed_comment.author.local_mugshot_url = await getLocalMugshotUrl(comment.person.mugshot_link);
         parsedComments.push(new_parsed_comment);
     }
 
-    console.log("parsed inline comments from API response:", parsedComments);
+    // console.log("parsed inline comments from API response:", parsedComments);
     return parsedComments;
 }
 
@@ -1189,7 +1225,7 @@ async function fetch_inline_comments_from_api(preview_diff_id) {
  * @returns 
  */
 function parseDraftInlineComments(preview_diff_id, draftComments) {
-    console.log("parsing draft inline comments:", draftComments);
+    // console.log("parsing draft inline comments:", draftComments);
     let parsedDraftComments = [];
     for (const line_number_in_original_diff in draftComments) {
         const commentText = draftComments[line_number_in_original_diff];
@@ -1204,6 +1240,7 @@ function parseDraftInlineComments(preview_diff_id, draftComments) {
             lineContent: lineContent,
             commentText: commentText,
             preview_diff_id: preview_diff_id,
+            self_type: "DraftInlineComments"
         });
     }
     return parsedDraftComments;
@@ -1270,6 +1307,9 @@ async function fetchInlineCommentsAndAddToCustomDiff() {
     const endTime = performance.now();
     console.log(`Finished fetching all inline comments and draft inline comments in ${endTime - startTime} milliseconds`);
 
+    // sort inline comments by date so that oldest comments are first
+    INLINE_COMMENTS.sort((a, b) => new Date(a.date) - new Date(b.date));
+
     // group comments by preview_diff_id, file, and line number
     // for each preview_diff_id, for each file, for each line number, create a list of comments
     INLINE_COMMENTS.forEach(inline_comment => {
@@ -1314,7 +1354,7 @@ async function fetchInlineCommentsAndAddToCustomDiff() {
     console.log("grouped inline comments", GROUPED_INLINE_COMMENTS)
 
     // TODO: also pass in the draft comments
-    createCodeCommentCards(GROUPED_INLINE_COMMENTS, GROUPED_DRAFT_INLINE_COMMENTS);
+    // createCodeCommentCards(GROUPED_INLINE_COMMENTS, GROUPED_DRAFT_INLINE_COMMENTS);
 
     add_inline_comments_to_custom_diff();
 
@@ -1593,24 +1633,24 @@ function enable_adding_inline_comments_from_diff() {
 }
 
 // TODO: find better way of doing this so that we can compare against other inline comments and not just the board comments
-function findBoardCommentToInsertAfter(commentDate) {
-    // commentDate is a string in the format "2024-03-11T16:32:09.664021+00:00"
+function findBoardCommentToInsertAfter(date) {
+    // date is a string in the format "2024-03-11T16:32:09.664021+00:00"
     const comments = document.querySelectorAll(".boardComment");
     // target time element:
     // <time itemprop="commentTime" datetime="2024-05-17T09:40:22.517036+00:00" title="2024-05-17 09:40:22 UTC">on
     // 2024-05-17</time>
     let newestComment = null;
-    let newestCommentDate = null;
+    let newestDate = null;
     for (const comment of comments) {
         const times = comment.querySelectorAll("time");
         // find time that has itemprop="commentTime"
         for (const time of times) {
             if (time.getAttribute("itemprop") === "commentTime") {
-                if (time.getAttribute("datetime") < commentDate) {
+                if (time.getAttribute("datetime") < date) {
                     // this comment is newer than the current newest comment
-                    if (newestCommentDate === null || time.getAttribute("datetime") > newestCommentDate) {
+                    if (newestDate === null || time.getAttribute("datetime") > newestDate) {
                         newestComment = comment;
-                        newestCommentDate = time.getAttribute("datetime");
+                        newestDate = time.getAttribute("datetime");
                     }
                 }
             }
@@ -1619,73 +1659,71 @@ function findBoardCommentToInsertAfter(commentDate) {
     return newestComment;
 }
 
+function createCodeCommentCardElement(inline_comments, preview_diff_id, draft_comment) {
+
+    const commentCard = document.createElement("div");
+    commentCard.classList.add("d2h-code-comment-card");
+    const header = document.createElement("div");
+    header.classList.add("d2h-code-comment-card-header");
+    const fileName = document.createElement("h3");
+    fileName.innerText = file;
+    const diffTable = document.createElement("table");
+    diffTable.classList.add("d2h-diff-table");
+    const diffTableContainer = document.createElement("div");
+    diffTableContainer.classList.add("d2h-diff-table-container");
+    diffTableContainer.appendChild(diffTable);
+    const diffTbody = document.createElement("tbody");
+    diffTbody.classList.add("d2h-diff-tbody");
+    // const commentsContainer = document.createElement("div");
+    // commentsContainer.classList.add("d2h-code-comment-card-comments-container");
+
+    header.appendChild(fileName);
+    const most_recent_preview_diff_id = get_most_recent_preview_diff_id();
+    // if preview_diff_id is not the current / most recent diff, add an "outdated" tag to header
+    if (preview_diff_id !== most_recent_preview_diff_id) {
+        const outdatedTag = document.createElement("span");
+        outdatedTag.classList.add("d2h-outdated-tag");
+        outdatedTag.classList.add("d2h-outdated-tag-right-align");
+        outdatedTag.innerText = "Outdated";
+        header.appendChild(outdatedTag);
+    }
+    commentCard.appendChild(header);
+    commentCard.appendChild(diffTableContainer);
+
+    const diffLines = getLinesAroundTargetLine(preview_diff_id, inline_comments[0].file, inline_comments[0].line_no, 4, 0);
+    // copy the diff lines into the diffTbody
+    diffLines.forEach(line => {
+        const clonedLine = line.cloneNode(true); // clone the line element
+        diffTbody.appendChild(clonedLine); // append the cloned line element
+    });
+    diffTable.appendChild(diffTbody);
+
+    console.log("inline comments:", inline_comments);
+    const commentThreadElement = createCommentThreadElement(inline_comments, draft_comment, false);
+    commentCard.appendChild(commentThreadElement);
+
+    return commentCard;
+}
+
 // create a new card that contains X number of lines before the target line number
 function createCodeCommentCards(groupedComments, groupedDraftComments) {
-    // TODO: add reply functionality 
 
     const most_recent_preview_diff_id = get_most_recent_preview_diff_id();
     // groupedComments.forEach(fileName => {
     for (const preview_diff_id in groupedComments) {
         for (const file in groupedComments[preview_diff_id]) {
             for (const line_no in groupedComments[preview_diff_id][file]) {
-                const comments = groupedComments[preview_diff_id][file][line_no];
-
-                const commentCard = document.createElement("div");
-                commentCard.classList.add("d2h-code-comment-card");
-                const header = document.createElement("div");
-                header.classList.add("d2h-code-comment-card-header");
-                const fileName = document.createElement("h3");
-                fileName.innerText = file;
-                const diffTable = document.createElement("table");
-                diffTable.classList.add("d2h-diff-table");
-                const diffTableContainer = document.createElement("div");
-                diffTableContainer.classList.add("d2h-diff-table-container");
-                diffTableContainer.appendChild(diffTable);
-                const diffTbody = document.createElement("tbody");
-                diffTbody.classList.add("d2h-diff-tbody");
-                // const commentsContainer = document.createElement("div");
-                // commentsContainer.classList.add("d2h-code-comment-card-comments-container");
-
-                header.appendChild(fileName);
-                // if preview_diff_id is not the current / most recent diff, add an "outdated" tag to header
-                if (preview_diff_id !== most_recent_preview_diff_id) {
-                    const outdatedTag = document.createElement("span");
-                    outdatedTag.classList.add("d2h-outdated-tag");
-                    outdatedTag.classList.add("d2h-outdated-tag-right-align");
-                    outdatedTag.innerText = "Outdated";
-                    header.appendChild(outdatedTag);
-                }
-                commentCard.appendChild(header);
-                commentCard.appendChild(diffTableContainer);
-
-
-                const diffLines = getLinesAroundTargetLine(preview_diff_id, comments[0].file, comments[0].line_no, 4, 0);
-                // copy the diff lines into the diffTbody
-                diffLines.forEach(line => {
-                    const clonedLine = line.cloneNode(true); // clone the line element
-                    diffTbody.appendChild(clonedLine); // append the cloned line element
-                });
-                diffTable.appendChild(diffTbody);
-
-
-                // // append comments 
-                // comments.forEach(comment => {
-                //     commentsContainer.appendChild(createInlineCommentElement(comment));
-                // });
-
-                // commentCard.appendChild(commentsContainer);
-
+                const inline_comments = groupedComments[preview_diff_id][file][line_no];
                 // TRYING TO USE THE NEW COMMENT THREAD ELEMENT
                 let draftComment = null;
                 if (preview_diff_id !== most_recent_preview_diff_id) {
                     draftComment = groupedDraftComments[preview_diff_id]?.[file]?.[line_no] || null;
                 }
                 console.log("found draft comment for code card:", draftComment);
-                const commentThreadElement = createCommentThreadElement(comments, draftComment, false);
-                commentCard.appendChild(commentThreadElement);
-
                 // find the newest comment to insert after
-                const newestComment = findBoardCommentToInsertAfter(comments[0].commentDate);
+                const newestComment = findBoardCommentToInsertAfter(comments[0].date);
+
+                const commentCard = createCodeCommentCardElement(inline_comments, preview_diff_id, draftComment);
 
                 // and then insert the comment card after the newest comment
                 if (newestComment) {
@@ -1991,6 +2029,7 @@ function create_checkout_changes_locally_button() {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 function main() {
+    // fetchReviewVotesFromAPI()
     ////////////////////// clean up existing elements first //////////////////////
     cleanup_previous_elements()
 
@@ -2015,7 +2054,9 @@ function main() {
         doCustomDiffStuff();
         fetchAllPreviewDiffTexts().then(() => {
             createHiddenDiffViewers();
-            fetchInlineCommentsAndAddToCustomDiff();
+            fetchInlineCommentsAndAddToCustomDiff().then(() => {
+                doTimeline();
+            });
         });
     });
 
@@ -2039,36 +2080,6 @@ else {
 
 
 ////////////////////////////////////////// NEW TIMELINE STUFF //////////////////////////////////////////
-
-// Planning of events timeline
-/**
- * - MP Comment is left. One of the following must be attached:
- *   - Comment message
- *   - Inline comment(s) - do not show inline comments independently in the timeline, they should be inserted into the
- *     appropriate code comment card
- *   - Review Vote (display the review vote in the timeline, not underneath the comment)
- *   - If there is no comment message, just have the base level timeline event say something like "USER requested
- *     information on Sep 16" or "USER requested changes on Sep 16"
- *   - if review vote was Comment Only, if user is NOT author, then just say "USER reviewed on Sep 16"
- *   - if review vote was Comment Only, if user IS author, then say "USER commented on Sep 16"
- * - Preview Diff ID (aka new code has been pushed) 
- * - CI/CD Result (with link to job run)
- * - review requested
- * - MP status changes (work in progress, needs review, approved, rejected, merged)
-*/
-function getMPTimelineEvents() {
-    // each event will be represented by an object with the following properties:
-    // - date
-    // - event type specific details object
-    // - function to render the event object
-    // -
-
-    /** categories of events that will be gathered and then all combined into one array and sorted by date:
-     * - comments with optional inline comments attached
-     *   - inline comments should be sorted by original line number in diff and then sorted by date in their threads
-     * 
-    */ 
-}
 
 // This will allow for 
 function parseReviewVotesFromAPIResponse(reviewVotes) {
@@ -2097,9 +2108,10 @@ function parseReviewVotesFromAPIResponse(reviewVotes) {
             reviewer_link: reviewVote.reviewer_link,
             is_pending: reviewVote.is_pending,
             review_type: reviewVote.review_type,
+            self_type: "reviewVote",
         });
     }
-    console.log("parsed review votes:", prasedReviewVotes);
+    // console.log("parsed review votes:", prasedReviewVotes);
     return prasedReviewVotes;
 }
 
@@ -2117,27 +2129,380 @@ function fetchReviewVotesFromAPI() {
         .catch(error => console.error('Error fetching review votes from API:', error));
 }
 
-function fetchCommentsFromAPI() {
+// return {
+//     "id": comment["id"],
+//     "self_link": comment["self_link"],
+//     "author_name": comment["author_link"].split("/~")[-1],
+//     "author_link": comment["author_link"],
+//     "message": comment["content"],
+//     "date_created": comment["date_created"],
+//     "date_last_edited": comment["date_last_edited"],
+//     "title": comment["title"],
+//     "vote": comment["vote"],
+//     "vote_tag": comment["vote_tag"],
+//     "revision_api_collection_link": comment["revisions_collection_link"],
+// }
+
+/**
+ * @typedef {'Approve' | 'Needs Fixing' | 'Needs Info' | 'Abstain' | 'Disapprove' | 'Needs Resubmitting' | ''} LP_ReviewVoteString
+ */
+
+/**
+ * @typedef {Object} LP_Comment
+ * @property {string} id - The comment ID.
+ * @property {string} self_link - The self link of the comment.
+ * @property {string} author_name - The name of the comment author.
+ * @property {string} author_link - The link to the comment author.
+ * @property {string} message - The comment message.
+ * @property {string} date_created - The date the comment was created.
+ * @property {string} date_last_edited - The date the comment was last edited.
+ * @property {string} title - The title of the comment.
+ * @property {LP_ReviewVoteString} vote - The vote on the comment.
+ * @property {string} vote_tag - The vote tag on the comment.
+ * @property {string} revision_api_collection_link - The link to the revisions collection that could be fetched from API
+ * to get the revisions history.
+ */
+
+/** Fetch comments from the API and return them as an array of LP_Comment objects.
+ * 
+ * @returns {Promise<Array<LP_Comment>>} The comments fetched from the API.
+ */
+async function fetchCommentsFromAPI() {
     // fetch from microservice @ /mp/comments with the MP URL encoded as query parameter
     const mpUrl = document.location.href;
-    const lp_microservice_url = "http://localhost:8000/mp/comments";
-    const encodedMPUrl = encodeURIComponent(mpUrl);
-    const url = `${lp_microservice_url}?mp_url=${encodedMPUrl}`;
+    const url = MICROSERVICE_BASE_URL + "/mp/comments";
 
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            console.log("fetched comments:", data);
-            return data;
-        })
-        .catch(error => console.error('Error fetching comments from API:', error));
+    const params = {
+        mp_url: mpUrl,
+    }
 
+    const urlParams = new URLSearchParams(params).toString();
+    const url_with_params = url + "?" + urlParams;
+
+    try {
+
+        const response = await fetch(url_with_params);
+        const data = await response.json();
+        console.log("fetched comments:", data);
+        return data;
+    }
+    catch (error) {
+        console.error("error fetching comments:", error);
+        return [];
+    }    
 }
 
-function associateInlineCommentsWithComments(comments, inlineComments) {
+/**
+ * 
+ * @returns {Array<LP_InlineComment>} List of inline comments (a thread), if any, for the line number in the file in the preview diff.
+ */
+function get_inline_comments_thread(preview_diff_id, file, line_no) {
+    // get all inline comments for the line number in the preview diff
+    const inlineComments = GROUPED_INLINE_COMMENTS[preview_diff_id]?.[file]?.[line_no] || null;
+    return inlineComments;
+}
+
+
+/**
+ * @typedef {Object} CommentWithThreads
+ * @property {LP_Comment} comment - The main comment object.
+ * @property {Array<Array<LP_InlineComment>>} inlineCommentsThreads - Array of inline comment threads associated with the comment.
+*/
+
+/** Get all comments from the API and group them with their associated inline comment threads.
+ * 
+ * This will be used for creating the timeline.
+ * 
+ * @returns {Promise<Array<CommentWithThreads>>} List of comments with their associated inline comment threads.
+ */
+async function getCommentsAndGroupWithCommentThreads() {
     // for each comment, find the inline comments that are associated with it
     // and add them to the comment object
-    // if the author of the inline comment is the same as the author of the comment
-    // and the inline comment and comment have the same date, then the inline comment is a reply to the comment
+    
+    // the result should be a list of dictionaries in format {comment: commentObject, inlineComments:
+    // [inlineCommentObject]}
+    
+    // also, instead of the individual inline comments left with that comment, include the full thread of inline
+    // comments if the first comment in the thread is associated with the comment
+    const comments = await fetchCommentsFromAPI();
+    const associatedComments = [];
+    for (const comment of comments) {
+        const associatedInlineCommentsThreads = [];
+        for (const inlineComment of INLINE_COMMENTS) {
+            // if the author of the inline comment is the same as the author of the comment
+            // and the inline comment and comment have the same date, then the inline comment is attached to the comment
+            if (inlineComment.author.name === comment.author_name && inlineComment.date === comment.date_created) {
+                const inlineCommentsThread = get_inline_comments_thread(inlineComment.preview_diff_id, inlineComment.file, inlineComment.line_no);
+                // if the first comment in the thread is the same as the comment, then add the entire thread
+                if (inlineCommentsThread[0].id === inlineComment.id) {
+                    console.log("found thread matching base comment")
+                    associatedInlineCommentsThreads.push(inlineCommentsThread);
+                }
+            }
+        }
+        associatedComments.push({ comment: comment, inlineCommentsThreads: associatedInlineCommentsThreads });
+    }
+    return associatedComments;
+}
+
+function generateMugshotUrlFromUsername(username) {
+    // https://code.launchpad.net/api/devel/~uhryniuk/mugshot
+    return `https://code.launchpad.net/api/devel/~${username}/mugshot`;
+}
+
+/**
+ * 
+ * @param {LP_MP_TimelineEvent} timeline_event 
+ */
+async function renderTimelineEvent(timeline_event) {
+    // this function will create a profile icon in the gutter of the event 
+    const timeline_event_wrapper = document.createElement("div");
+    timeline_event_wrapper.classList.add("timeline-event-wrapper")
+
+    const profile_icon = document.createElement("div");
+    profile_icon.classList.add("timeline-comment-profile-icon");
+    const profile_icon_img = document.createElement("img");
+    profile_icon_img.classList.add("timeline-comment-profile-icon-img");
+    const mugshot_url = generateMugshotUrlFromUsername(timeline_event.Username);
+    console.log("mugshot url:", mugshot_url);
+    profile_icon_img.src = await getLocalMugshotUrl(mugshot_url) || "https://www.clipartmax.com/png/small/34-340027_user-login-man-human-body-mobile-person-comments-person-icon-png.png";
+    profile_icon.appendChild(profile_icon_img);
+
+    const timeline_event_gutter = document.createElement("div");
+    timeline_event_gutter.classList.add("timeline-event-gutter")
+    timeline_event_gutter.appendChild(profile_icon);
+
+    const timeline_event_gutter_line = document.createElement("div");
+    timeline_event_gutter_line.classList.add("timeline-event-gutter-line");
+    timeline_event_gutter.appendChild(timeline_event_gutter_line);
+
+    // actually render the element
+    const renderedTimelineEventElement = timeline_event.RenderFunction(timeline_event.Object);
+    
+    timeline_event_wrapper.appendChild(timeline_event_gutter)
+    timeline_event_wrapper.appendChild(renderedTimelineEventElement);
+
+    return timeline_event_wrapper;
+}
+
+/**
+ * @param {CommentWithThreads} commentWithThreads - The comment with its associated inline comment threads.
+ * 
+ */
+function renderCommentEvent(commentWithThreads) {
+    /**
+     * [Mandatory] Render first line (review vote / type of comment) in timeline 
+     * [Optional] Render main comment message in timeline
+     * [Optional] Render new inline comments in timeline (only render if comment is first in thread, and then render all replies)
+     */
+    const comment = commentWithThreads.comment;
+    const inlineCommentsThreads = commentWithThreads.inlineCommentsThreads;
+
+    console.log("inline comments threads:", inlineCommentsThreads);
+    const commentElement = document.createElement("div");
+    commentElement.classList.add("timeline-comment-event");
+
+    // render the first line as a flex div that starts with an icon and with a p and various span elements
+    // set icon based on comment's vote (LP_ReviewVoteString) which is either Approve, Needs Fixing, Needs Info,
+    // Abstain, Disapprove, Needs Resubmitting, or ""
+
+    const reviewVoteDiv = document.createElement("div");
+    reviewVoteDiv.classList.add("timeline-review-vote");
+    
+    
+    const reviewIconElement = document.createElement("div");
+    reviewIconElement.classList.add("timeline-review-vote-icon");
+    reviewIconElement.innerText = getReviewIcon(comment.vote);
+    reviewVoteDiv.appendChild(reviewIconElement);
+
+    const reviewTextString = getReviewText(comment.vote) + " on " + new Date(comment.date_created).toLocaleDateString();
+    const reviewTextElement = document.createElement("p");
+    reviewTextElement.innerText = reviewTextString;
+    reviewTextElement.classList.add("timeline-review-vote-text");
+    reviewVoteDiv.appendChild(reviewTextElement);
+    commentElement.appendChild(reviewVoteDiv);
+
+    // console.log("comment message: ", comment.message);
+    // do comment message / body
+    if (comment.message) {
+        const commentMessageElement = document.createElement("div");
+        commentMessageElement.classList.add("timeline-comment-message");
+        const header = document.createElement("div");
+        header.classList.add("timeline-comment-message-header");
+        const authorLink = document.createElement("a");
+        authorLink.classList.add("timeline-comment-message-author-link");
+        authorLink.href = comment.author_link;
+        authorLink.innerText = comment.author_name;
+        header.appendChild(authorLink);
+        header.innerHTML += " left a comment";
+
+        commentMessageElement.appendChild(header);
+        
+        const commentMessageContent = document.createElement("div");
+        commentMessageContent.classList.add("timeline-comment-message-content");
+        commentMessageContent.classList.add("markdown");
+        commentMessageContent.innerHTML = MDconverter.makeHtml(comment.message);
+        commentMessageContent.innerText = comment.message;
+        commentMessageElement.appendChild(commentMessageContent);
+        commentElement.appendChild(commentMessageElement);
+    }
+
+    // do inline comments threads
+    if (inlineCommentsThreads.length > 0) {
+        const inlineCommentsThreadElement = document.createElement("div");
+        // do inline comments thread / code comment cards
+        for (const inlineCommentsThread of inlineCommentsThreads) {
+            // create code comment card element
+            const codeCommentCardElement = createCodeCommentCardElement(
+                inlineCommentsThread,
+                inlineCommentsThread[0].preview_diff_id,
+                null,  // no draft comment
+            );
+            inlineCommentsThreadElement.appendChild(codeCommentCardElement);
+        }    
+        inlineCommentsThreadElement.classList.add("timeline-inline-comments-thread");
+        commentElement.appendChild(inlineCommentsThreadElement);
+    }
+    return commentElement;
+}
+
+
+/** Create icon based on review vote
+ * 
+ * @param {LP_ReviewVoteString} vote
+ */
+function getReviewIcon(vote) {
+    switch (vote) {
+        case "Approve":
+            return "✅";
+        case "Needs Fixing":
+            return "❌";
+        case "Needs Info":
+            return "❓";
+        case "Abstain":
+            return "🤐";
+        case "Disapprove":
+            return "❌";
+        case "Needs Resubmitting":
+            return "🔄";
+        default:
+            return "📝";   
+    }
+}
+
+/**
+ * 
+ * @param {LP_ReviewVoteString} vote 
+ * @returns 
+ */
+function getReviewText(vote) {
+    switch (vote) {
+        case "Approve":
+            return "Approved these changes";
+        case "Needs Fixing":
+            return "Requested changes";
+        case "Needs Info":
+            return "Requested information";
+        case "Abstain":
+            return "Abstained from voting";
+        case "Disapprove":
+            return "Disapproved these changes";
+        case "Needs Resubmitting":
+            return "Requested resubmission";
+        default:
+            return "Reviewed";   
+    }
+}
+
+/**
+ * @typedef LP_MP_TimelineEvent 
+ * @property {string} Date - datetime string that will be used to sort the events
+ * @property {Object} Object - object containing details of the event
+ * @property {Function} RenderFunction - function that will render the event in the timeline
+ * @property {string} Type - type of event (comment, review vote, preview diff, ci/cd result, review requested) 
+ * @property {string} Username - username of user that caused this event
+ */
+async function getMPTimelineEvents() {
+
+    /** structure of event time line entry is:
+     * Date - datetime string that will be used to sort the events
+     * Object - object containing details of the event
+     * Render - function that will render the event in the timeline
+     * Type - type of event (comment, review vote, preview diff, ci/cd result, review requested) 
+     */
+
+
+    /** categories of events that will be gathered and then all combined into one array and sorted by date:
+     * - comments with review vote and inline comments
+     *      - ci/cd  (which for now, lets just leave as comments)
+    */
+    
+    // so for now, all we need to do are comments !
+    const commentsWithCommentThreads = await getCommentsAndGroupWithCommentThreads();
+
+    console.log(commentsWithCommentThreads);
+
+    const timelineEvents = [];
+
+    commentsWithCommentThreads.forEach(commentWithThreads => {
+        const comment = commentWithThreads.comment;
+        const inlineCommentsThreads = commentWithThreads.inlineCommentsThreads;
+        const commentEvent = {
+            Date: comment.date_created,
+            Object: {
+                comment: comment,
+                inlineCommentsThreads: inlineCommentsThreads,
+            },
+            Type: "Comment",
+            RenderFunction: renderCommentEvent,
+            Username: comment.author_name,
+        };
+        timelineEvents.push(commentEvent);
+    });
+    return timelineEvents
+}
+
+
+// Planning of events timeline
+/**
+ * - MP Comment is left. One of the following must be attached:
+ *   - Comment message
+ *   - Inline comment(s) - do not show inline comments independently in the timeline, they should be inserted into the
+ *     appropriate code comment card
+ *   - Review Vote (display the review vote in the timeline, not underneath the comment)
+ *   - If there is no comment message, just have the base level timeline event say something like "USER requested
+ *     information on Sep 16" or "USER requested changes on Sep 16" or "USER approved on Sep 16"
+ *   - if review vote was Comment Only, if user is NOT author, then just say "USER reviewed on Sep 16"
+ *   - if review vote was Comment Only, if user IS author, then say "USER commented on Sep 16"
+ * - Preview Diff ID (aka new code has been pushed) 
+ * - CI/CD Result (with link to job run)
+ *   - if comment is CI/CD result, remove comment from comments list for timeline
+ * - review requested
+ * - optional: MP status changes (work in progress, needs review, approved, rejected, merged)
+*/
+
+async function doTimeline() {
+    const timeline = document.createElement("div");
+    timeline.setAttribute("id", "mp-timeline");
+    
+    const timelineEvents = await getMPTimelineEvents();
+    const timelineEventElementsPromises = [];
+    timelineEvents.forEach(timelineEvent => {
+        // const timelineElement = timelineEvent.RenderFunction(timelineEvent.Object);
+        const timeline_event_element = renderTimelineEvent(timelineEvent);
+        timelineEventElementsPromises.push(timeline_event_element);
+    });  
+    
+    const timelineEventElements = await Promise.all(timelineEventElementsPromises);
+
+    timelineEventElements.forEach(timelineEventElement => {
+        timeline.appendChild(timelineEventElement);
+    });
+
+    // hide old #conversation div 
+    document.querySelector("#conversation").style.display = "none";
+
+    // insert the timeline div after the #conversation div
+    document.querySelector("#conversation").insertAdjacentElement("afterend", timeline);
 
 }
